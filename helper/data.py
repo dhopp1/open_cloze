@@ -20,6 +20,7 @@ def setup_languages():
             "Hungarian": "hun",
             "Italian": "ita",
             "Japanese": "jpn",
+            "Mandarin": "cmn",
             "Norwegian": "nob",
             "Portuguese": "por",
             "Romanian": "ron",
