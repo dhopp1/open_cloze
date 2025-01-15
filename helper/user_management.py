@@ -2,15 +2,6 @@ import hmac
 
 import pandas as pd
 import streamlit as st
-from streamlit_server_state import server_state, server_state_lock, no_rerun
-
-
-def update_server_state(key, value):
-    "update the server state variable"
-    with no_rerun:
-        with server_state_lock[key]:
-            server_state[key] = value
-
 
 def check_password():
     """Check if a user entered the password correctly"""
