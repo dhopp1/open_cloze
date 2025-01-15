@@ -8,13 +8,13 @@ import streamlit.components.v1 as components
 
 def create_cloze_test(sentence):
     words = sentence.split()
-    if len(words) < 2:
-        return (
-            None,
-            None,
-            None,
-        )  # Ensure there are at least two words to avoid trivial tests
-    blank_index = random.randint(0, len(words) - 1)
+    
+    if words[-1] == "?": # french
+        end_int = len(words) - 2
+    else:
+        end_int = len(words) - 1
+    
+    blank_index = random.randint(0, end_int)
     blank_word = re.sub("[.?¿¡!,]", "", words[blank_index])
     cloze_sentence = " ".join(
         [word if i != blank_index else "_____" for i, word in enumerate(words)]
