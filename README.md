@@ -1,5 +1,5 @@
 # open_cloze
-This application provides a front end for practicing cloze tests. It supports any language listed on [https://www.manythings.org/anki/](https://www.manythings.org/anki/).
+This application provides a front end for practicing cloze tests. It supports any language listed on [https://www.manythings.org/anki/](https://www.manythings.org/anki/). You can try it for free at [https://open-cloze.streamlit.app/](https://open-cloze.streamlit.app/) with user `User` and password `password`, though individual progress won't be saved unless you self-host.
 
 ## Installation
 - Install the libraries in `requirements.txt`
