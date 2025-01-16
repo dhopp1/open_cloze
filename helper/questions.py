@@ -4,6 +4,7 @@ import random
 import re
 import streamlit as st
 import streamlit.components.v1 as components
+import time
 
 
 def create_cloze_test(sentence):
@@ -34,6 +35,10 @@ def setup_round():
     sentence_list = pd.read_csv(
         f"database/{st.session_state['user_id']}/{lang_abr}.csv"
     )
+
+    # wrong counter
+    if "wrong_counter" not in st.session_state:
+        st.session_state["wrong_counter"] = 0
 
     # random sample
     if "sentence_ids" not in st.session_state:
@@ -132,6 +137,9 @@ def setup_round():
                     + 1
                 )
             else:
+                st.session_state[
+                    "wrong_counter"
+                ] += 1  # how many they got wrong this round
                 st.error(f"{st.session_state['translation']}")
                 st.session_state["sentence_sample"].loc[
                     lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
@@ -183,8 +191,10 @@ def setup_round():
         n_done = len(sentence_list.loc[lambda x: x.n_right >= 1, :])
         total = len(sentence_list)
 
+        st.session_state["end_time"] = time.time()
+
         st.info(
-            f"Successfully studied {st.session_state['num_sentences']} sentences. You have studied {(n_done/total * 100):.6f}% of sentences."
+            f"Successfully studied {st.session_state['num_sentences']} sentences in {round((st.session_state['end_time'] - st.session_state['start_time'])/60, 0):.0f} minute(s). You have studied {(n_done/total * 100):.6f}% of sentences."
         )
 
         # saving progress to disk
@@ -238,7 +248,25 @@ def setup_round():
             f"database/{st.session_state['user_id']}/{lang_abr}.csv", index=False
         )
 
+        # progress file
+        progress = pd.read_csv(f"database/{st.session_state['user_id']}/progress.csv")
+        tmp_df = pd.DataFrame(
+            {
+                "date": [datetime.date.today().strftime("%Y-%m-%d")],
+                "language": [st.session_state["persistent_lang_name"]],
+                "n_sentences": [st.session_state["num_sentences"]],
+                "n_wrong": [st.session_state["wrong_counter"]],
+                "seconds": [
+                    st.session_state["end_time"] - st.session_state["start_time"]
+                ],
+            }
+        )
+        pd.concat([progress, tmp_df], ignore_index=True).to_csv(
+            f"database/{st.session_state['user_id']}/progress.csv", index=False
+        )
+
         # deleting session state variables
+        del st.session_state["wrong_counter"]
         del st.session_state["sentence_ids"]
         del st.session_state["sentence_sample"]
         del st.session_state["remaining_sample"]

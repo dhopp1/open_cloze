@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 from helper.questions import setup_round
 
@@ -55,6 +56,7 @@ def show_round():
     if st.session_state["start_round"]:
         # end mid-round
         try:
+            del st.session_state["wrong_counter"]
             del st.session_state["sentence_ids"]
             del st.session_state["sentence_sample"]
             del st.session_state["remaining_sample"]
@@ -63,6 +65,7 @@ def show_round():
             pass
 
         st.session_state["persistent_lang_name"] = st.session_state["selected_language"]
+        st.session_state["start_time"] = time.time()  # start time of the round
 
         setup_round()
 

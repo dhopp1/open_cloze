@@ -29,6 +29,12 @@ def setup_languages():
             "Turkish": "tur",
         }
 
+    # make round data file for user
+    if not (os.path.exists(f"database/{st.session_state['user_id']}/progress.csv")):
+        pd.DataFrame(
+            columns=["date", "language", "n_sentences", "n_wrong", "seconds"]
+        ).to_csv(f"database/{st.session_state['user_id']}/progress.csv", index=False)
+
     # see if database exists for user
     if not (os.path.exists(f"database/{st.session_state['user_id']}")):
         os.makedirs(f"database/{st.session_state['user_id']}")

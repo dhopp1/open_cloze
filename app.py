@@ -48,5 +48,12 @@ sidebar()
 setup_languages()
 
 
-### show the round
-show_round()
+### tabs
+tabs = st.tabs(["Round", "Stats"])
+
+with tabs[0]:
+    ### show the round
+    show_round()
+
+with tabs[1]:
+    st.markdown("analytics")
