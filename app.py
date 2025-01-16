@@ -1,9 +1,9 @@
-import os
 import pandas as pd
 import streamlit as st
 
 from helper.data import setup_languages
 from helper.questions import setup_round
+from helper.stats import calc_stats
 from helper.ui import (
     import_styles,
     show_round,
@@ -56,4 +56,4 @@ with tabs[0]:
     show_round()
 
 with tabs[1]:
-    st.markdown("analytics")
+    calc_stats()
