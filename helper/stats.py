@@ -22,9 +22,9 @@ def calc_stats():
         format="DD.MM.YYYY",
     )
 
-    if (
-        len(st.session_state["date_range"]) == 2
-    ):  # for not throwing an error while changing dates
+    if (len(st.session_state["date_range"]) == 2) and len(
+        stats
+    ) > 0:  # for not throwing an error while changing dates
         try:
             stats = stats.loc[
                 lambda x: (x.language == st.session_state["selected_language"])
