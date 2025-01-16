@@ -240,8 +240,11 @@ def setup_round():
                 .loc[lambda x: x.done_round == 0, "sentence_id"]
                 .values
             )
-
-            del st.session_state["options"]
+            
+            try:
+                del st.session_state["options"]
+            except:
+                pass
 
             st.rerun()
 
