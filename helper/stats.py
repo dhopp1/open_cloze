@@ -25,14 +25,21 @@ def calc_stats():
     if (
         len(st.session_state["date_range"]) == 2
     ):  # for not throwing an error while changing dates
-        stats = stats.loc[
-            lambda x: (x.language == st.session_state["selected_language"])
-            & (x.date.dt.strftime("%Y-%m-%d") >= str(st.session_state["date_range"][0]))
-            & (
-                x.date.dt.strftime("%Y-%m-%d") <= str(st.session_state["date_range"][1])
-            ),
-            :,
-        ].reset_index(drop=True)
+        try:
+            stats = stats.loc[
+                lambda x: (x.language == st.session_state["selected_language"])
+                & (
+                    x.date.dt.strftime("%Y-%m-%d")
+                    >= str(st.session_state["date_range"][0])
+                )
+                & (
+                    x.date.dt.strftime("%Y-%m-%d")
+                    <= str(st.session_state["date_range"][1])
+                ),
+                :,
+            ].reset_index(drop=True)
+        except:
+            pass
 
         # time aggregation select box
         st.session_state["stat_time_agg"] = st.selectbox(
