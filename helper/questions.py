@@ -1,4 +1,5 @@
 import datetime
+import editdistance
 import pandas as pd
 import random
 import re
@@ -21,6 +22,42 @@ def create_cloze_test(sentence):
         [word if i != blank_index else "_____" for i, word in enumerate(words)]
     )
     return cloze_sentence, blank_word, blank_index
+
+
+def find_closest_words(corpus, target_word, top_n):
+    "given a corpus, select top x closest to the target word"
+
+    distances = []
+    for word in corpus:
+        if word != target_word:
+            dist = editdistance.eval(target_word, word)
+            distances.append((word, dist))
+    distances.sort(key=lambda x: x[1])
+    return [x[0] for x in distances[:top_n]]
+
+
+def gen_multiple_choice(
+    sentence_list, target_word, n=3, top_n_sample=100, random_corpus_n=500
+):
+    "generate 4 options for multiple choice"
+
+    # random sample for corpus
+    corpus = set(
+        re.sub(
+            "[.?¿¡!,]",
+            "",
+            " ".join(
+                list(
+                    sentence_list.loc[
+                        random.sample(list(sentence_list.sentence_id), random_corpus_n),
+                        "translation",
+                    ].values
+                )
+            ).lower(),
+        ).split()
+    )
+    sample = find_closest_words(corpus, target_word, top_n_sample)
+    return random.sample(sample, n)
 
 
 def setup_round():
@@ -59,6 +96,7 @@ def setup_round():
         st.session_state["sentence_sample"]["cloze_sentence"] = ""
         st.session_state["sentence_sample"]["missing_word"] = ""
         st.session_state["sentence_sample"]["word_index"] = 0
+        st.session_state["sentence_sample"]["multiple_choice"] = ""
         for i in st.session_state["sentence_sample"].index:
             cloze_sentence, missing_word, word_index = create_cloze_test(
                 st.session_state["sentence_sample"].loc[i, "translation"]
@@ -68,6 +106,17 @@ def setup_round():
             ] = cloze_sentence
             st.session_state["sentence_sample"].loc[i, "missing_word"] = missing_word
             st.session_state["sentence_sample"].loc[i, "word_index"] = word_index
+
+            # multiple choice options
+            st.session_state["sentence_sample"].loc[i, "multiple_choice"] = ",".join(
+                gen_multiple_choice(
+                    sentence_list,
+                    missing_word,
+                    n=st.session_state["num_choice"] - 1,
+                    top_n_sample=100,
+                    random_corpus_n=500,
+                )
+            )
 
     # remaining sample
     if "remaining_sample" not in st.session_state:
@@ -114,7 +163,35 @@ def setup_round():
         else:
             st.session_state["counter"] += 1
 
-        st.session_state["guess"] = st.text_input(st.session_state["english"], "")
+        # text input or multiple choice
+        if not (st.session_state["use_choice"]):
+            st.session_state["guess"] = st.text_input(st.session_state["english"], "")
+        else:
+            if "options" not in st.session_state:
+                st.session_state["options"] = (
+                    st.session_state["sentence_sample"]
+                    .loc[
+                        lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
+                        "multiple_choice",
+                    ]
+                    .values[0]
+                ).split(",") + [st.session_state["translation"]]
+                st.session_state["options"] = random.sample(
+                    st.session_state["options"], len(st.session_state["options"])
+                )
+                st.session_state["options"] = [""] + st.session_state["options"]
+
+                # upper case if correct answer is uppercased
+                if st.session_state["translation"][0].isupper():
+                    st.session_state["options"] = [
+                        x.title() for x in st.session_state["options"]
+                    ]
+
+            st.session_state["guess"] = st.selectbox(
+                st.session_state["english"],
+                options=st.session_state["options"],
+                index=0,
+            )
 
         st.session_state["next_question"] = st.button("Next question")
 
@@ -164,23 +241,26 @@ def setup_round():
                 .values
             )
 
+            del st.session_state["options"]
+
             st.rerun()
 
         # to empty and autohighlight guess box
-        components.html(
-            f"""
-                <div></div>
-                <p style="display: none;">{st.session_state.counter}</p>
-                <script>
-                    var input = window.parent.document.querySelectorAll("input[type=text]");
-        
-                    for (var i = 0; i < input.length; ++i) {{
-                        input[i].focus();
-                    }}
-            </script>
-            """,
-            height=150,
-        )
+        if not (st.session_state["use_choice"]):
+            components.html(
+                f"""
+                    <div></div>
+                    <p style="display: none;">{st.session_state.counter}</p>
+                    <script>
+                        var input = window.parent.document.querySelectorAll("input[type=text]");
+            
+                        for (var i = 0; i < input.length; ++i) {{
+                            input[i].focus();
+                        }}
+                </script>
+                """,
+                height=150,
+            )
 
     # finished the round
     else:

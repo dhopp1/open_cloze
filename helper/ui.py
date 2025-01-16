@@ -43,6 +43,16 @@ def sidebar():
         value=10,
     )
 
+    # use multiple choice?
+    st.session_state["use_choice"] = st.sidebar.checkbox("Use multiple choice?")
+
+    # how many options for multiple choice
+    st.session_state["num_choice"] = st.sidebar.number_input(
+        "How many options to display for multiple choice",
+        min_value=2,
+        value=4,
+    )
+
     # run button
     st.session_state["start_round"] = st.sidebar.button(
         "Start the round",
@@ -61,6 +71,10 @@ def show_round():
             del st.session_state["sentence_sample"]
             del st.session_state["remaining_sample"]
             del st.session_state["rand_sentence_id"]
+            try:
+                del st.session_state["options"]
+            except:
+                pass
         except:
             pass
 
