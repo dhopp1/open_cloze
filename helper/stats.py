@@ -9,11 +9,16 @@ def calc_stats():
     )
 
     # date range
+    if len(stats) > 0:
+        min_date = stats.date.min()
+        max_date = stats.date.max()
+    else:
+        min_date = "today"
+        max_date = "today"
+
     st.session_state["date_range"] = st.date_input(
         label="Date range",
-        value=(stats.date.min(), stats.date.max()),
-        min_value=stats.date.min(),
-        max_value=stats.date.max(),
+        value=(min_date, max_date),
         format="DD.MM.YYYY",
     )
 
