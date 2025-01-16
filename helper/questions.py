@@ -8,12 +8,12 @@ import streamlit.components.v1 as components
 
 def create_cloze_test(sentence):
     words = sentence.split()
-    
-    if words[-1] == "?": # french
+
+    if words[-1] == "?":  # french
         end_int = len(words) - 2
     else:
         end_int = len(words) - 1
-    
+
     blank_index = random.randint(0, end_int)
     blank_word = re.sub("[.?¿¡!,]", "", words[blank_index])
     cloze_sentence = " ".join(
@@ -25,7 +25,7 @@ def create_cloze_test(sentence):
 def setup_round():
     "setup a round with questions"
 
-    st.markdown(f"## Open Cloze - {st.session_state['selected_language']}")
+    st.markdown(f"## {st.session_state['persistent_lang_name']}")
 
     st.session_state["active"] = 1
 

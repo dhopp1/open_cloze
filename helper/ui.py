@@ -20,15 +20,10 @@ def import_styles():
 
 def ui_header():
     "UI header"
-    pass
-    # st.title("")
+    st.title("Open Cloze")
 
 
 def sidebar():
-    st.sidebar.markdown(
-        "# Open Cloze",
-    )
-
     st.sidebar.markdown(
         "# Choose your language",
     )
@@ -37,7 +32,7 @@ def sidebar():
     st.session_state["selected_language"] = st.sidebar.selectbox(
         "Select language",
         options=st.session_state["language_options"],
-        index=0,
+        index=7,
     )
 
     # how many sentences
@@ -57,5 +52,19 @@ def show_round():
     if "active" not in st.session_state:
         st.session_state["active"] = 0
 
-    if st.session_state["start_round"] or st.session_state["active"] == 1:
+    if st.session_state["start_round"]:
+        # end mid-round
+        try:
+            del st.session_state["sentence_ids"]
+            del st.session_state["sentence_sample"]
+            del st.session_state["remaining_sample"]
+            del st.session_state["rand_sentence_id"]
+        except:
+            pass
+
+        st.session_state["persistent_lang_name"] = st.session_state["selected_language"]
+
+        setup_round()
+
+    if (st.session_state["active"] == 1) and not (st.session_state["start_round"]):
         setup_round()

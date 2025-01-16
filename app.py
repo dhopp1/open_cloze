@@ -21,6 +21,12 @@ ui_header()  # header
 if not check_password():
     st.stop()
 
+if "initialized" not in st.session_state:
+    st.session_state["initialized"] = 1
+    st.info(
+        "Select a language and press the `Start the round` button in the sidebar to get started"
+    )
+
 set_user_id()
 
 # language options
