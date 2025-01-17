@@ -21,7 +21,8 @@ def import_styles():
 
 def ui_header():
     "UI header"
-    st.title("Open Cloze")
+    # st.title("Open Cloze")
+    st.markdown("## Open Cloze")
 
 
 def sidebar():

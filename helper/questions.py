@@ -63,8 +63,6 @@ def gen_multiple_choice(
 def setup_round():
     "setup a round with questions"
 
-    st.markdown(f"## {st.session_state['persistent_lang_name']}")
-
     st.session_state["active"] = 1
 
     lang_abr = st.session_state["language_key"][st.session_state["selected_language"]]
@@ -125,11 +123,6 @@ def setup_round():
             .loc[lambda x: x.done_round == 0, "sentence_id"]
             .values
         )
-
-    st.markdown(
-        f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining."
-    )
-    st.divider()
 
     if len(st.session_state["remaining_sample"]) > 0:
         if "rand_sentence_id" not in st.session_state:
@@ -194,6 +187,9 @@ def setup_round():
             )
 
         st.session_state["next_question"] = st.button("Next question")
+        st.markdown(
+            f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining."
+        )
 
         # checking the missing word
         if st.session_state["guess"]:
@@ -240,7 +236,7 @@ def setup_round():
                 .loc[lambda x: x.done_round == 0, "sentence_id"]
                 .values
             )
-            
+
             try:
                 del st.session_state["options"]
             except:
