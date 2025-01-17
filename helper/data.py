@@ -26,13 +26,14 @@ def setup_languages():
             "Romanian": "ron",
             "Russian": "rus",
             "Spanish": "spa",
+            "Swedish": "swe",
             "Turkish": "tur",
         }
 
     # see if database exists for user
     if not (os.path.exists(f"database/{st.session_state['user_id']}")):
         os.makedirs(f"database/{st.session_state['user_id']}")
-    
+
     # make round data file for user
     if not (os.path.exists(f"database/{st.session_state['user_id']}/progress.csv")):
         pd.DataFrame(

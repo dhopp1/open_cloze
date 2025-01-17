@@ -7,6 +7,42 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
+special_char_dict = {
+    "Czech": [
+        "á",
+        "č",
+        "ď",
+        "é",
+        "ě",
+        "í",
+        "ň",
+        "ó",
+        "ř",
+        "š",
+        "ť",
+        "ú",
+        "ů",
+        "ý",
+        "ž",
+    ],
+    "Danish": ["æ", "ø", "å"],
+    "Dutch": ["é"],
+    "French": ["à", "â", "ç", "é", "è", "ê", "ë", "ï", "ô", "ù", "û", "ü", "œ", "æ"],
+    "German": ["ä", "ö", "ü", "ß"],
+    "Greek": [],
+    "Hindi": [],
+    "Hungarian": ["á", "é", "í", "ó", "ú", "ö", "ő", "ü", "ű"],
+    "Italian": ["à", "é", "è", "ì", "ò", "ù"],
+    "Japanese": [],
+    "Mandarin": [],
+    "Norwegian": ["å", "æ", "ø"],
+    "Portuguese": ["á", "â", "ã", "à", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú"],
+    "Romanian": ["ă", "â", "î", "ș", "ț"],
+    "Russian": [],
+    "Spanish": ["á", "é", "í", "ñ", "ó", "ú", "ý"],
+    "Turkish": ["ç", "ğ", "ö", "ş", "ü"],
+}
+
 
 def create_cloze_test(sentence):
     words = sentence.split()
@@ -190,6 +226,14 @@ def setup_round():
         st.markdown(
             f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining."
         )
+
+        # special characters in this language for copying
+        special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
+        if len(special_chars) > 0:
+            st.markdown("**Special characters**")
+            upper_chars = [x.upper() for x in special_chars]
+            st.code(" ".join(special_chars))
+            st.code(" ".join(upper_chars))
 
         # checking the missing word
         if st.session_state["guess"]:
