@@ -1,4 +1,5 @@
 editdistance
 pandas
 plotly
+sklearn
 streamlit
