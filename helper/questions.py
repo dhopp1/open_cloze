@@ -115,9 +115,23 @@ def setup_round():
         0
     ]
 
-    sentence_list = (
-        pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
-        .loc[lambda x: x.set == st.session_state["selected_set"], :]
+    if "sentence_list" not in st.session_state:
+        st.session_state["sentence_list"] = (
+            pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
+            .loc[lambda x: x.set == st.session_state["selected_set"], :]
+            .reset_index(drop=True)
+        )
+
+    # percentiles
+    lower_bound = st.session_state["sentence_list"].difficulty.quantile(
+        st.session_state["percentile"][0] / 100
+    )
+    upper_bound = st.session_state["sentence_list"].difficulty.quantile(
+        st.session_state["percentile"][1] / 100
+    )
+    st.session_state["sentence_list"] = (
+        st.session_state["sentence_list"]
+        .loc[lambda x: (x.difficulty >= lower_bound) & (x.difficulty <= upper_bound), :]
         .reset_index(drop=True)
     )
 
@@ -128,21 +142,21 @@ def setup_round():
     # random sample
     if "sentence_ids" not in st.session_state:
         st.session_state["max_num_sentences"] = min(
-            st.session_state["num_sentences"], len(sentence_list)
+            st.session_state["num_sentences"], len(st.session_state["sentence_list"])
         )
 
-        st.session_state["sentence_ids"] = [
-            random.randint(
-                min(sentence_list["sentence_id"]), max(sentence_list["sentence_id"])
-            )
-            for _ in range(st.session_state["max_num_sentences"])
-        ]
+        st.session_state["sentence_ids"] = random.sample(
+            list(st.session_state["sentence_list"]["sentence_id"]),
+            st.session_state["max_num_sentences"],
+        )
 
     if "sentence_sample" not in st.session_state:
         with st.spinner("Setting up sample..."):
-            st.session_state["sentence_sample"] = sentence_list.loc[
-                lambda x: x.sentence_id.isin(st.session_state["sentence_ids"]), :
-            ].reset_index(drop=True)
+            st.session_state["sentence_sample"] = (
+                st.session_state["sentence_list"]
+                .loc[lambda x: x.sentence_id.isin(st.session_state["sentence_ids"]), :]
+                .reset_index(drop=True)
+            )
             st.session_state["sentence_sample"]["done_round"] = 0
 
             # create cloze sentences
@@ -167,7 +181,7 @@ def setup_round():
                     i, "multiple_choice"
                 ] = ",".join(
                     gen_multiple_choice(
-                        sentence_list,
+                        st.session_state["sentence_list"],
                         missing_word,
                         n=st.session_state["num_choice"] - 1,
                         top_n_sample=100,
@@ -350,11 +364,11 @@ def setup_round():
     # finished the round
     else:
         # showing finish info
-        sentence_list = pd.read_csv(
+        st.session_state["sentence_list"] = pd.read_csv(
             f"database/{st.session_state['user_id']}/{lang_abr}.csv"
         )
-        n_done = len(sentence_list.loc[lambda x: x.n_right >= 1, :])
-        total = len(sentence_list)
+        n_done = len(st.session_state["sentence_list"].loc[lambda x: x.n_right >= 1, :])
+        total = len(st.session_state["sentence_list"])
 
         st.session_state["end_time"] = time.time()
 
@@ -368,7 +382,7 @@ def setup_round():
             :, "last_practiced"
         ] = datetime.date.today().strftime("%Y-%m-%d")
         merged_df = pd.merge(
-            sentence_list,
+            st.session_state["sentence_list"],
             st.session_state["sentence_sample"].loc[
                 :, ["sentence_id", "n_right", "n_wrong", "last_practiced"]
             ],
@@ -431,6 +445,7 @@ def setup_round():
         )
 
         # deleting session state variables
+        del st.session_state["sentence_list"]
         del st.session_state["wrong_counter"]
         del st.session_state["sentence_ids"]
         del st.session_state["sentence_sample"]

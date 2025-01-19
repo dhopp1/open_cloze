@@ -80,6 +80,14 @@ def sidebar():
         value=4,
     )
 
+    # percentile difficulty slider
+    st.session_state["percentile"] = st.sidebar.slider(
+        "Difficulty percentiles",
+        min_value=0,
+        max_value=100,
+        value=(0, 100),
+    )
+
     # run button
     st.session_state["start_round"] = st.sidebar.button(
         "Start the round",
@@ -93,6 +101,7 @@ def show_round():
     if st.session_state["start_round"]:
         # end mid-round
         try:
+            del st.session_state["sentence_list"]
             del st.session_state["wrong_counter"]
             del st.session_state["sentence_ids"]
             del st.session_state["sentence_sample"]

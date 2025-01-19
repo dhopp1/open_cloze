@@ -1,10 +1,66 @@
 import os
 import pandas as pd
+import string
 import streamlit as st
 import tempfile
 import requests
 import zipfile
 import shutil
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
+# determining the difficulty of a sentence
+def check_dict(dictionary, value, mean_value):
+    try:
+        return dictionary[value]
+    except:
+        return mean_value
+
+
+def calc_tfidf(sentence, tfidf_data_dict, mean_value):
+    "get tfidf of an individual string"
+    avg = pd.Series(
+        [
+            check_dict(tfidf_data_dict["weight"], x, mean_value)
+            for x in sentence.lower()
+            .translate(str.maketrans("", "", string.punctuation + "。" + "、" + "？"))
+            .split()
+        ]
+    ).mean()
+    summy = pd.Series(
+        [
+            check_dict(tfidf_data_dict["weight"], x, mean_value)
+            for x in sentence.lower()
+            .translate(str.maketrans("", "", string.punctuation + "。" + "、" + "？"))
+            .split()
+        ]
+    ).sum()
+    return (avg, summy)
+
+
+def gen_difficulty(corpus, mean_percentile=0.1):
+    # vectorizer
+    tfidf = TfidfVectorizer().fit(
+        corpus.translation.str.lower().str.translate(
+            str.maketrans("", "", string.punctuation + "。" + "、" + "？")
+        )
+    )
+    tfidf_data = pd.DataFrame(
+        tfidf.idf_, index=tfidf.get_feature_names_out(), columns=["weight"]
+    )
+    tfidf_data_dict = tfidf_data.to_dict()
+
+    mean_value = (
+        tfidf_data.sort_values(["weight"], ascending=True)[
+            : int(len(tfidf_data) * mean_percentile)
+        ]
+    ).values.mean()  # mean of first 10th percentile for missing values
+    scores = [
+        pd.Series(calc_tfidf(x, tfidf_data_dict, mean_value)).mean().round(2)
+        for x in corpus.translation
+    ]  # lower score = easier, higher = harder. mean of sentence sum and mean, to control for hard and long/short sentences
+
+    return scores
 
 
 def setup_languages():
@@ -77,6 +133,7 @@ def setup_languages():
                     data.columns = ["english", "translation"]
 
                     # add columns for last time practiced, number times right, number times wrong
+                    data["difficulty"] = gen_difficulty(data, mean_percentile=0.1)
                     data["set"] = "Tatoeba"
                     data["last_practiced"] = ""
                     data["n_right"] = 0
