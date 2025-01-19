@@ -83,6 +83,8 @@ def gen_multiple_choice(
     "generate 4 options for multiple choice"
 
     # random sample for corpus
+    max_corpus = min(random_corpus_n, len(sentence_list))
+
     corpus = set(
         re.sub(
             "[.?¿¡!,]",
@@ -90,7 +92,7 @@ def gen_multiple_choice(
             " ".join(
                 list(
                     sentence_list.loc[
-                        random.sample(list(sentence_list.index), random_corpus_n),
+                        random.sample(list(sentence_list.index), max_corpus),
                         "translation",
                     ].values
                 )
@@ -108,8 +110,10 @@ def setup_round():
 
     lang_abr = st.session_state["language_key"][st.session_state["selected_language"]]
 
-    sentence_list = pd.read_csv(
-        f"database/{st.session_state['user_id']}/{lang_abr}.csv"
+    sentence_list = (
+        pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
+        .loc[lambda x: x.set == st.session_state["selected_set"], :]
+        .reset_index(drop=True)
     )
 
     # wrong counter
@@ -118,17 +122,21 @@ def setup_round():
 
     # random sample
     if "sentence_ids" not in st.session_state:
+        st.session_state["max_num_sentences"] = min(
+            st.session_state["num_sentences"], len(sentence_list)
+        )
+
         st.session_state["sentence_ids"] = [
             random.randint(
                 min(sentence_list["sentence_id"]), max(sentence_list["sentence_id"])
             )
-            for _ in range(st.session_state["num_sentences"])
+            for _ in range(st.session_state["max_num_sentences"])
         ]
 
     if "sentence_sample" not in st.session_state:
-        st.session_state["sentence_sample"] = sentence_list.iloc[
-            st.session_state["sentence_ids"], :
-        ]
+        st.session_state["sentence_sample"] = sentence_list.loc[
+            lambda x: x.sentence_id.isin(st.session_state["sentence_ids"]), :
+        ].reset_index(drop=True)
         st.session_state["sentence_sample"]["done_round"] = 0
 
         # create cloze sentences

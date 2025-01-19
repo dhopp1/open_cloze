@@ -1,3 +1,5 @@
+import os
+import pandas as pd
 import streamlit as st
 import time
 
@@ -36,6 +38,26 @@ def sidebar():
         options=st.session_state["language_options"],
         index=8,
     )
+
+    # set selector
+    if "language_key" in st.session_state:
+        if os.path.exists(
+            f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']]}.csv"
+        ):
+            if "set_options" not in st.session_state:
+                st.session_state["set_options"] = list(
+                    pd.read_csv(
+                        f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']]}.csv"
+                    )
+                    .loc[:, "set"]
+                    .unique()
+                )
+
+            st.session_state["selected_set"] = st.sidebar.selectbox(
+                "Select set",
+                options=st.session_state["set_options"],
+                index=0,
+            )
 
     # how many sentences
     st.session_state["num_sentences"] = st.sidebar.number_input(

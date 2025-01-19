@@ -77,6 +77,7 @@ def setup_languages():
                     data.columns = ["english", "translation"]
 
                     # add columns for last time practiced, number times right, number times wrong
+                    data["set"] = "Tatoeba"
                     data["last_practiced"] = ""
                     data["n_right"] = 0
                     data["n_wrong"] = 0

@@ -39,14 +39,11 @@ if "language_options" not in st.session_state:
 ### initialization
 import_styles()
 
-
-### sidebar
-sidebar()
-
-
 ### data setup
 setup_languages()
 
+### sidebar
+sidebar()
 
 ### tabs
 tabs = st.tabs(["Round", "Stats"])
