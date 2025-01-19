@@ -10,25 +10,25 @@ import shutil
 def setup_languages():
     if "language_key" not in st.session_state:
         st.session_state["language_key"] = {
-            "Bengali": "ben",
-            "Czech": "ces",
-            "Danish": "dan",
-            "Dutch": "nld",
-            "French": "fra",
-            "German": "deu",
-            "Greek": "ell",
-            "Hindi": "hin",
-            "Hungarian": "hun",
-            "Italian": "ita",
-            "Japanese": "jpn",
-            "Mandarin": "cmn",
-            "Norwegian": "nob",
-            "Portuguese": "por",
-            "Romanian": "ron",
-            "Russian": "rus",
-            "Spanish": "spa",
-            "Swedish": "swe",
-            "Turkish": "tur",
+            "Bengali": ["ben", "bn"],
+            "Czech": ["ces", "cs"],
+            "Danish": ["dan", "da"],
+            "Dutch": ["nld", "nl"],
+            "French": ["fra", "fr"],
+            "German": ["deu", "de"],
+            "Greek": ["ell", "el"],
+            "Hindi": ["hin", "hi"],
+            "Hungarian": ["hun", "hu"],
+            "Italian": ["ita", "it"],
+            "Japanese": ["jpn", "ja"],
+            "Mandarin": ["cmn", "zh"],
+            "Norwegian": ["nob", "no"],
+            "Portuguese": ["por", "pt"],
+            "Romanian": ["ron", "ro"],
+            "Russian": ["rus", "ru"],
+            "Spanish": ["spa", "es"],
+            "Swedish": ["swe", "sv"],
+            "Turkish": ["tur", "tr"],
         }
 
     # see if database exists for user
@@ -44,7 +44,7 @@ def setup_languages():
     # download language_files
     with st.spinner("Setting up language files..."):
         for language in st.session_state["language_options"]:
-            lang_abr = st.session_state["language_key"][language]
+            lang_abr = st.session_state["language_key"][language][0]
 
             # check if CSV file exists
             if not (

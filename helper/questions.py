@@ -1,5 +1,8 @@
 import datetime
 import editdistance
+import glob
+from gtts import gTTS
+import os
 import pandas as pd
 import random
 import re
@@ -108,7 +111,9 @@ def setup_round():
 
     st.session_state["active"] = 1
 
-    lang_abr = st.session_state["language_key"][st.session_state["selected_language"]]
+    lang_abr = st.session_state["language_key"][st.session_state["selected_language"]][
+        0
+    ]
 
     sentence_list = (
         pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
@@ -134,36 +139,54 @@ def setup_round():
         ]
 
     if "sentence_sample" not in st.session_state:
-        st.session_state["sentence_sample"] = sentence_list.loc[
-            lambda x: x.sentence_id.isin(st.session_state["sentence_ids"]), :
-        ].reset_index(drop=True)
-        st.session_state["sentence_sample"]["done_round"] = 0
+        with st.spinner("Setting up sample..."):
+            st.session_state["sentence_sample"] = sentence_list.loc[
+                lambda x: x.sentence_id.isin(st.session_state["sentence_ids"]), :
+            ].reset_index(drop=True)
+            st.session_state["sentence_sample"]["done_round"] = 0
 
-        # create cloze sentences
-        st.session_state["sentence_sample"]["cloze_sentence"] = ""
-        st.session_state["sentence_sample"]["missing_word"] = ""
-        st.session_state["sentence_sample"]["word_index"] = 0
-        st.session_state["sentence_sample"]["multiple_choice"] = ""
-        for i in st.session_state["sentence_sample"].index:
-            cloze_sentence, missing_word, word_index = create_cloze_test(
-                st.session_state["sentence_sample"].loc[i, "translation"]
-            )
-            st.session_state["sentence_sample"].loc[
-                i, "cloze_sentence"
-            ] = cloze_sentence
-            st.session_state["sentence_sample"].loc[i, "missing_word"] = missing_word
-            st.session_state["sentence_sample"].loc[i, "word_index"] = word_index
-
-            # multiple choice options
-            st.session_state["sentence_sample"].loc[i, "multiple_choice"] = ",".join(
-                gen_multiple_choice(
-                    sentence_list,
-                    missing_word,
-                    n=st.session_state["num_choice"] - 1,
-                    top_n_sample=100,
-                    random_corpus_n=500,
+            # create cloze sentences
+            st.session_state["sentence_sample"]["cloze_sentence"] = ""
+            st.session_state["sentence_sample"]["missing_word"] = ""
+            st.session_state["sentence_sample"]["word_index"] = 0
+            st.session_state["sentence_sample"]["multiple_choice"] = ""
+            for i in st.session_state["sentence_sample"].index:
+                cloze_sentence, missing_word, word_index = create_cloze_test(
+                    st.session_state["sentence_sample"].loc[i, "translation"]
                 )
-            )
+                st.session_state["sentence_sample"].loc[
+                    i, "cloze_sentence"
+                ] = cloze_sentence
+                st.session_state["sentence_sample"].loc[
+                    i, "missing_word"
+                ] = missing_word
+                st.session_state["sentence_sample"].loc[i, "word_index"] = word_index
+
+                # multiple choice options
+                st.session_state["sentence_sample"].loc[
+                    i, "multiple_choice"
+                ] = ",".join(
+                    gen_multiple_choice(
+                        sentence_list,
+                        missing_word,
+                        n=st.session_state["num_choice"] - 1,
+                        top_n_sample=100,
+                        random_corpus_n=500,
+                    )
+                )
+
+                # create audio files
+                if st.session_state["gen_pronunciation"]:
+                    myobj = gTTS(
+                        text=st.session_state["sentence_sample"].loc[i, "translation"],
+                        lang=st.session_state["language_key"][
+                            st.session_state["selected_language"]
+                        ][1],
+                        slow=False,
+                    )
+                    myobj.save(
+                        f"database/{st.session_state['user_id']}/{st.session_state['sentence_sample'].loc[i, 'sentence_id']}.mp3"
+                    )
 
     # remaining sample
     if "remaining_sample" not in st.session_state:
@@ -273,6 +296,12 @@ def setup_round():
                     ]
                     + 1
                 )
+
+        # play audio
+        if st.session_state["gen_pronunciation"]:
+            st.audio(
+                f"database/{st.session_state['user_id']}/{st.session_state['rand_sentence_id']}.mp3",
+            )
 
         # special characters in this language for copying
         special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
@@ -407,3 +436,11 @@ def setup_round():
         del st.session_state["sentence_sample"]
         del st.session_state["remaining_sample"]
         del st.session_state["rand_sentence_id"]
+
+        # deleting audio files
+        mp3_files = glob.glob(
+            os.path.join(f"database/{st.session_state['user_id']}/", "*.mp3")
+        )
+        if len(mp3_files) > 0:
+            for file in mp3_files:
+                os.remove(file)

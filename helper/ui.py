@@ -42,16 +42,15 @@ def sidebar():
     # set selector
     if "language_key" in st.session_state:
         if os.path.exists(
-            f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']]}.csv"
+            f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
         ):
-            if "set_options" not in st.session_state:
-                st.session_state["set_options"] = list(
-                    pd.read_csv(
-                        f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']]}.csv"
-                    )
-                    .loc[:, "set"]
-                    .unique()
+            st.session_state["set_options"] = list(
+                pd.read_csv(
+                    f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
                 )
+                .loc[:, "set"]
+                .unique()
+            )
 
             st.session_state["selected_set"] = st.sidebar.selectbox(
                 "Select set",
@@ -68,6 +67,11 @@ def sidebar():
 
     # use multiple choice?
     st.session_state["use_choice"] = st.sidebar.checkbox("Use multiple choice?")
+
+    # generate pronunciations?
+    st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
+        "Generate pronunciation?"
+    )
 
     # how many options for multiple choice
     st.session_state["num_choice"] = st.sidebar.number_input(
