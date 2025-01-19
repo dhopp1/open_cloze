@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 import time
 
 special_char_dict = {
+    "Bengali": [],
     "Czech": [
         "á",
         "č",
@@ -47,13 +48,17 @@ special_char_dict = {
 def create_cloze_test(sentence):
     words = sentence.split()
 
-    if words[-1] == "?":  # french
-        end_int = len(words) - 2
-    else:
-        end_int = len(words) - 1
+    acceptable = False
+    while not (acceptable):
+        blank_index = random.randint(0, len(words) - 1)
+        blank_word = words[blank_index]
 
-    blank_index = random.randint(0, end_int)
-    blank_word = re.sub("[.?¿¡!,]", "", words[blank_index])
+        # check if valid blank, if not pull again
+        if blank_word not in ["?", ".", ",", "!", "。", "、", "？", "Tom", "a", "az"]:
+            # take out punctuation from acceptable sentence
+            blank_word = re.sub("[.?¿¡!,。、？]", "", blank_word)
+            acceptable = True
+
     cloze_sentence = " ".join(
         [word if i != blank_index else "_____" for i, word in enumerate(words)]
     )
@@ -85,7 +90,7 @@ def gen_multiple_choice(
             " ".join(
                 list(
                     sentence_list.loc[
-                        random.sample(list(sentence_list.sentence_id), random_corpus_n),
+                        random.sample(list(sentence_list.index), random_corpus_n),
                         "translation",
                     ].values
                 )
@@ -213,7 +218,7 @@ def setup_round():
                 # upper case if correct answer is uppercased
                 if st.session_state["translation"][0].isupper():
                     st.session_state["options"] = [
-                        x.title() for x in st.session_state["options"]
+                        x.capitalize() for x in st.session_state["options"]
                     ]
 
             st.session_state["guess"] = st.selectbox(
@@ -226,14 +231,6 @@ def setup_round():
         st.markdown(
             f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining."
         )
-
-        # special characters in this language for copying
-        special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
-        if len(special_chars) > 0:
-            st.markdown("**Special characters**")
-            upper_chars = [x.upper() for x in special_chars]
-            st.code(" ".join(special_chars))
-            st.code(" ".join(upper_chars))
 
         # checking the missing word
         if st.session_state["guess"]:
@@ -268,6 +265,14 @@ def setup_round():
                     ]
                     + 1
                 )
+
+        # special characters in this language for copying
+        special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
+        if len(special_chars) > 0:
+            st.markdown("**Special characters**")
+            upper_chars = [x.upper() for x in special_chars]
+            st.code(" ".join(special_chars))
+            st.code(" ".join(upper_chars))
 
         if st.session_state["next_question"]:
             # load a new question

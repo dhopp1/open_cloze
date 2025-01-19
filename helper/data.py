@@ -10,6 +10,7 @@ import shutil
 def setup_languages():
     if "language_key" not in st.session_state:
         st.session_state["language_key"] = {
+            "Bengali": "ben",
             "Czech": "ces",
             "Danish": "dan",
             "Dutch": "nld",

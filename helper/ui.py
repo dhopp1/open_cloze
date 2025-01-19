@@ -34,7 +34,7 @@ def sidebar():
     st.session_state["selected_language"] = st.sidebar.selectbox(
         "Select language",
         options=st.session_state["language_options"],
-        index=7,
+        index=8,
     )
 
     # how many sentences
