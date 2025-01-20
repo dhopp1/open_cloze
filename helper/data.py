@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import stanza
 import string
 import streamlit as st
 import tempfile
@@ -8,6 +9,17 @@ import zipfile
 import shutil
 import time
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+
+# segment chinese and japanese
+def segment_language(nlp, sentence):
+    doc = nlp(sentence)
+    for sentence in doc.sentences:
+        seg_result = []
+        for word in sentence.words:
+            seg_result.append(word.text)
+
+    return seg_result
 
 
 # determining the difficulty of a sentence
@@ -115,6 +127,12 @@ def setup_languages():
             if not (
                 os.path.exists(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
             ):
+                if lang_abr == "cmn":
+                    stanza.download("zh", processors="tokenize")
+
+                elif lang_abr == "jpn":
+                    stanza.download("ja", processors="tokenize")
+
                 with tempfile.TemporaryDirectory() as temp_dir:
                     # Download the file
                     url = f"https://www.manythings.org/anki/{lang_abr}-eng.zip"
@@ -140,6 +158,22 @@ def setup_languages():
                     data = pd.read_csv(f"{temp_dir}/{lang_abr}.txt", sep="\t")
                     data = data.iloc[:, :2]
                     data.columns = ["english", "translation"]
+
+                    # add spaces for chinese and japanese
+                    if lang_abr == "cmn":
+                        nlp = stanza.Pipeline(
+                            "zh", processors="tokenize", download_method=None
+                        )
+                        data["translation"] = [
+                            " ".join(segment_language(nlp, x)) for x in data.translation
+                        ]
+                    elif lang_abr == "jpn":
+                        nlp = stanza.Pipeline(
+                            "ja", processors="tokenize", download_method=None
+                        )
+                        data["translation"] = [
+                            " ".join(segment_language(nlp, x)) for x in data.translation
+                        ]
 
                     # add columns for last time practiced, number times right, number times wrong
                     data["difficulty"] = gen_difficulty(data, mean_percentile=0.1)
@@ -205,6 +239,22 @@ def csv_upload():
                     tmp["n_right"] = 0
                     tmp["n_wrong"] = 0
                     tmp["difficulty"] = gen_difficulty(tmp, mean_percentile=0.1)
+
+                    # chinese and japanese tokenization
+                    if st.session_state["selected_language"] == "Mandarin":
+                        nlp = stanza.Pipeline(
+                            "zh", processors="tokenize", download_method=None
+                        )
+                        tmp["translation"] = [
+                            " ".join(segment_language(nlp, x)) for x in tmp.translation
+                        ]
+                    elif st.session_state["selected_language"] == "Japanese":
+                        nlp = stanza.Pipeline(
+                            "ja", processors="tokenize", download_method=None
+                        )
+                        tmp["translation"] = [
+                            " ".join(segment_language(nlp, x)) for x in tmp.translation
+                        ]
 
                     max_sentence_id = full.sentence_id.max()
                     tmp["sentence_id"] = list(

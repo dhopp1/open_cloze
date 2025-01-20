@@ -3,4 +3,5 @@ gtts
 pandas
 plotly
 sklearn
+stanza
 streamlit
