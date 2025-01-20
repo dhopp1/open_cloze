@@ -163,9 +163,12 @@ def setup_languages():
                     stanza.download("ja", processors="tokenize")
                     engine = pykakasi.kakasi()
                 elif lang_abr in ["hin", "ben"]:
-                    engine = XlitEngine(
-                        src_script_type="indic", beam_width=10, rescore=False
-                    )
+                    try:
+                        engine = XlitEngine(
+                            src_script_type="indic", beam_width=10, rescore=False
+                        )
+                    except:
+                        engine = None
 
                 with tempfile.TemporaryDirectory() as temp_dir:
                     # Download the file
@@ -267,9 +270,12 @@ def csv_upload():
 
                 if "english" in tmp.columns and "translation" in tmp.columns:
                     if st.session_state["selected_language"] in ["Hindi", "Bengali"]:
-                        engine = XlitEngine(
-                            src_script_type="indic", beam_width=10, rescore=False
-                        )
+                        try:
+                            engine = XlitEngine(
+                                src_script_type="indic", beam_width=10, rescore=False
+                            )
+                        except:
+                            engine = None
                     elif st.session_state["selected_language"] == "Japanese":
                         engine = pykakasi.kakasi()
                     else:
