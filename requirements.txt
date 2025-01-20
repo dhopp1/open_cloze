@@ -4,6 +4,7 @@ editdistance
 gtts
 pandas
 plotly
+pykakasi
 sklearn
 stanza
 streamlit

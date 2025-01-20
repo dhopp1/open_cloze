@@ -1,6 +1,7 @@
 import os
 import pinyin
 import pandas as pd
+import pykakasi
 import stanza
 import string
 import streamlit as st
@@ -41,6 +42,9 @@ def do_transliterate(lang, sentence, engine):
         transliteration = engine.translit_sentence(sentence, lang_code="hi")
     elif lang == "Bengali":
         transliteration = engine.translit_sentence(sentence, lang_code="bn")
+    elif lang == "Japanese":
+        result = engine.convert(sentence)
+        transliteration = "".join([x["hepburn"] for x in result])
 
     return transliteration
 
@@ -157,6 +161,7 @@ def setup_languages():
                     stanza.download("zh", processors="tokenize")
                 elif lang_abr == "jpn":
                     stanza.download("ja", processors="tokenize")
+                    engine = pykakasi.kakasi()
                 elif lang_abr in ["hin", "ben"]:
                     engine = XlitEngine(
                         src_script_type="indic", beam_width=10, rescore=False
@@ -265,6 +270,8 @@ def csv_upload():
                         engine = XlitEngine(
                             src_script_type="indic", beam_width=10, rescore=False
                         )
+                    elif st.session_state["selected_language"] == "Japanese":
+                        engine = pykakasi.kakasi()
                     else:
                         engine = None
 
