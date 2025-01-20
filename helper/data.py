@@ -9,7 +9,10 @@ import requests
 import zipfile
 import shutil
 import time
+from ai4bharat.transliteration import XlitEngine
+from arabic_buckwalter_transliteration.transliteration import arabic_to_buckwalter
 from sklearn.feature_extraction.text import TfidfVectorizer
+from transliterate import translit
 
 
 # segment chinese and japanese
@@ -24,10 +27,21 @@ def segment_language(nlp, sentence):
 
 
 # transliterate
-def transliterate(lang, sentence):
+def do_transliterate(lang, sentence, engine):
     transliteration = ""
     if lang == "Mandarin":
         transliteration = pinyin.get(sentence, format="numerical")
+    elif lang == "Russian":
+        transliteration = translit(sentence, "ru", reversed=True)
+    elif lang == "Greek":
+        transliteration = translit(sentence, "el", reversed=True)
+    elif lang == "Arabic":
+        transliteration = arabic_to_buckwalter(sentence)
+    elif lang == "Hindi":
+        transliteration = engine.translit_sentence(sentence, lang_code="hi")
+    elif lang == "Bengali":
+        transliteration = engine.translit_sentence(sentence, lang_code="bn")
+
     return transliteration
 
 
@@ -137,11 +151,16 @@ def setup_languages():
             if not (
                 os.path.exists(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
             ):
+                # language specific elements
+                engine = None
                 if lang_abr == "cmn":
                     stanza.download("zh", processors="tokenize")
-
                 elif lang_abr == "jpn":
                     stanza.download("ja", processors="tokenize")
+                elif lang_abr in ["hin", "ben"]:
+                    engine = XlitEngine(
+                        src_script_type="indic", beam_width=10, rescore=False
+                    )
 
                 with tempfile.TemporaryDirectory() as temp_dir:
                     # Download the file
@@ -187,7 +206,7 @@ def setup_languages():
 
                     # add columns for last time practiced, number times right, number times wrong
                     data["transliteration"] = [
-                        transliterate(language, x) for x in data.translation
+                        do_transliterate(language, x, engine) for x in data.translation
                     ]
                     data["difficulty"] = gen_difficulty(data, mean_percentile=0.1)
                     data["set"] = "Tatoeba"
@@ -242,13 +261,22 @@ def csv_upload():
                 tmp = pd.read_csv(f"database/{st.session_state['user_id']}/tmp.csv")
 
                 if "english" in tmp.columns and "translation" in tmp.columns:
+                    if st.session_state["selected_language"] in ["Hindi", "Bengali"]:
+                        engine = XlitEngine(
+                            src_script_type="indic", beam_width=10, rescore=False
+                        )
+                    else:
+                        engine = None
+
                     # incorporate the file into the existing database file
                     full = pd.read_csv(
                         f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
                     )
 
                     tmp["transliteration"] = [
-                        transliterate(st.session_state["selected_language"], x)
+                        do_transliterate(
+                            st.session_state["selected_language"], x, engine
+                        )
                         for x in tmp.translation
                     ]
                     tmp["set"] = st.session_state["csv_set_name"]
