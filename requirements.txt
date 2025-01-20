@@ -5,7 +5,7 @@ gtts
 pandas
 plotly
 pykakasi
-sklearn
+scikit-learn
 stanza
 streamlit
 transliterate
