@@ -3,6 +3,7 @@ arabic_buckwalter_transliteration
 editdistance
 gtts
 pandas
+pinyin
 plotly
 pykakasi
 scikit-learn
