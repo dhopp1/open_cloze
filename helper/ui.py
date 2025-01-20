@@ -70,7 +70,25 @@ def sidebar():
 
     # generate pronunciations?
     st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
-        "Generate pronunciation?"
+        "Generate pronunciation?", "Add an option to read the sentence aloud"
+    )
+
+    # show transliteration?
+    st.session_state["show_transliteration"] = st.sidebar.checkbox(
+        "Show transliteration/original script?",
+        help="Shows the transliteration if the language is not written in the latin script. Shows the original script if `Guess transliteration` is checked",
+    )
+
+    # guess transliteration?
+    st.session_state["guess_transliteration"] = st.sidebar.checkbox(
+        "Guess transliteration",
+        help="Guess the transliteration rather than the original script",
+    )
+
+    # show answer in transliteration?
+    st.session_state["show_transliteration_answer"] = st.sidebar.checkbox(
+        "Show answer in transliteration?",
+        help="Whether or not to show the answer in the transliteration/original script",
     )
 
     # how many options for multiple choice

@@ -1,4 +1,5 @@
 import os
+import pinyin
 import pandas as pd
 import stanza
 import string
@@ -20,6 +21,14 @@ def segment_language(nlp, sentence):
             seg_result.append(word.text)
 
     return seg_result
+
+
+# transliterate
+def transliterate(lang, sentence):
+    transliteration = ""
+    if lang == "Mandarin":
+        transliteration = pinyin.get(sentence, format="numerical")
+    return transliteration
 
 
 # determining the difficulty of a sentence
@@ -79,6 +88,7 @@ def gen_difficulty(corpus, mean_percentile=0.1):
 def setup_languages():
     if "language_key" not in st.session_state:
         st.session_state["language_key"] = {
+            "Arabic": ["ara", "ar"],
             "Bengali": ["ben", "bn"],
             "Czech": ["ces", "cs"],
             "Danish": ["dan", "da"],
@@ -176,6 +186,9 @@ def setup_languages():
                         ]
 
                     # add columns for last time practiced, number times right, number times wrong
+                    data["transliteration"] = [
+                        transliterate(language, x) for x in data.translation
+                    ]
                     data["difficulty"] = gen_difficulty(data, mean_percentile=0.1)
                     data["set"] = "Tatoeba"
                     data["last_practiced"] = ""
@@ -234,6 +247,10 @@ def csv_upload():
                         f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
                     )
 
+                    tmp["transliteration"] = [
+                        transliterate(st.session_state["selected_language"], x)
+                        for x in tmp.translation
+                    ]
                     tmp["set"] = st.session_state["csv_set_name"]
                     tmp["last_practiced"] = ""
                     tmp["n_right"] = 0

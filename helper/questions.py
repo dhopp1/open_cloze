@@ -11,6 +11,7 @@ import streamlit.components.v1 as components
 import time
 
 special_char_dict = {
+    "Arabic": [],
     "Bengali": [],
     "Czech": [
         "á",
@@ -58,7 +59,9 @@ def ordinal(n):
     return str(n) + suffix
 
 
-def create_cloze_test(sentence):
+def create_cloze_test(
+    sentence, reverse=False
+):  # reverse for right to left language like arabic
     words = sentence.split()
 
     acceptable = False
@@ -72,9 +75,10 @@ def create_cloze_test(sentence):
             blank_word = re.sub("[.?¿¡!,。、？]", "", blank_word)
             acceptable = True
 
-    cloze_sentence = " ".join(
-        [word if i != blank_index else "_____" for i, word in enumerate(words)]
-    )
+    word_list = [word if i != blank_index else "_____" for i, word in enumerate(words)]
+    if reverse:
+        word_list = list(reversed(word_list))
+    cloze_sentence = " ".join(word_list)
     return cloze_sentence, blank_word, blank_index
 
 
@@ -132,11 +136,17 @@ def setup_round():
             .reset_index(drop=True)
         )
 
-        st.session_state["sentence_list"] = (
-            pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
-            .loc[lambda x: x.set == st.session_state["selected_set"], :]
-            .reset_index(drop=True)
-        )
+        # flip transliteration and origianl if desired
+        if st.session_state["guess_transliteration"]:
+            transliteration = st.session_state["full_sentence_list"]["transliteration"]
+            st.session_state["full_sentence_list"]["transliteration"] = (
+                st.session_state["full_sentence_list"]["translation"]
+            )
+            st.session_state["full_sentence_list"]["translation"] = transliteration
+
+        st.session_state["sentence_list"] = st.session_state[
+            "full_sentence_list"
+        ]  # because will be edited down later for quantiles
 
     # percentiles
     lower_bound = st.session_state["sentence_list"].difficulty.quantile(
@@ -178,16 +188,37 @@ def setup_round():
             # create cloze sentences
             st.session_state["sentence_sample"]["difficulty_percentile"] = ""
             st.session_state["sentence_sample"]["cloze_sentence"] = ""
+            st.session_state["sentence_sample"]["transliteration_sentence"] = ""
             st.session_state["sentence_sample"]["missing_word"] = ""
             st.session_state["sentence_sample"]["word_index"] = 0
             st.session_state["sentence_sample"]["multiple_choice"] = ""
+            if st.session_state["persistent_lang_name"] in ["Arabic"]:
+                reverse = True
+            else:
+                reverse = False
             for i in st.session_state["sentence_sample"].index:
                 cloze_sentence, missing_word, word_index = create_cloze_test(
-                    st.session_state["sentence_sample"].loc[i, "translation"]
+                    st.session_state["sentence_sample"].loc[i, "translation"], reverse
                 )
                 st.session_state["sentence_sample"].loc[
                     i, "cloze_sentence"
                 ] = cloze_sentence
+
+                # transliteration
+                if st.session_state["show_transliteration"]:
+                    transliteration = (
+                        st.session_state["sentence_sample"]
+                        .loc[i, "transliteration"]
+                        .split()
+                    )
+                    if not (st.session_state["show_transliteration_answer"]):
+                        transliteration[word_index] = "_____"
+                    transliteration = " ".join(transliteration)
+
+                    st.session_state["sentence_sample"].loc[
+                        i, "transliteration_sentence"
+                    ] = transliteration
+
                 st.session_state["sentence_sample"].loc[
                     i, "missing_word"
                 ] = missing_word
@@ -268,6 +299,13 @@ def setup_round():
         st.markdown(
             f'### {st.session_state["sentence_sample"].loc[lambda x: x.sentence_id == st.session_state["rand_sentence_id"], "cloze_sentence"].values[0]}'
         )
+
+        # show transliteration if asked
+        if st.session_state["show_transliteration"]:
+            st.markdown(
+                f'{st.session_state["sentence_sample"].loc[lambda x: x.sentence_id == st.session_state["rand_sentence_id"], "transliteration_sentence"].values[0]}'
+            )
+
         if "counter" not in st.session_state:
             st.session_state["counter"] = 0
         else:
