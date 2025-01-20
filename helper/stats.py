@@ -8,7 +8,11 @@ def calc_stats():
         pd.read_csv(
             f"database/{st.session_state['user_id']}/progress.csv", parse_dates=["date"]
         )
-        .loc[lambda x: x.set == st.session_state["selected_set"], :]
+        .loc[
+            lambda x: (x.set == st.session_state["selected_set"])
+            & (x.language == st.session_state["selected_language"]),
+            :,
+        ]
         .reset_index(drop=True)
     )
 
@@ -16,13 +20,18 @@ def calc_stats():
         pd.read_csv(
             f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
         )
-        .loc[lambda x: x.set == st.session_state["selected_set"], :]
+        .loc[lambda x: (x.set == st.session_state["selected_set"]), :]
         .reset_index(drop=True)
     )
 
+    if len(stats) > 0:
+        progress_value = stats.set_progress.max()
+    else:
+        progress_value = 0.0
+
     st.progress(
-        stats.set_progress.max(),
-        text=f"**Set progress ({round(stats.set_progress.max() * 100, 6)}% of {len(sentences):,} sentences)**",
+        progress_value,
+        text=f"**Set progress ({round(progress_value * 100, 6)}% of {len(sentences):,} sentences)**",
     )
 
     # date range

@@ -480,12 +480,15 @@ def setup_round():
         )
 
         # deleting session state variables
-        del st.session_state["sentence_list"]
-        del st.session_state["wrong_counter"]
-        del st.session_state["sentence_ids"]
-        del st.session_state["sentence_sample"]
-        del st.session_state["remaining_sample"]
-        del st.session_state["rand_sentence_id"]
+        try:
+            del st.session_state["sentence_list"]
+            del st.session_state["wrong_counter"]
+            del st.session_state["sentence_ids"]
+            del st.session_state["sentence_sample"]
+            del st.session_state["remaining_sample"]
+            del st.session_state["rand_sentence_id"]
+        except:
+            pass
 
         # deleting audio files
         mp3_files = glob.glob(

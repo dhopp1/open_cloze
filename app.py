@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-from helper.data import setup_languages
+from helper.data import csv_upload, setup_languages
 from helper.questions import setup_round
 from helper.stats import calc_stats
 from helper.ui import (
@@ -44,6 +44,7 @@ setup_languages()
 
 ### sidebar
 sidebar()
+csv_upload()
 
 ### tabs
 tabs = st.tabs(["Round", "Stats"])

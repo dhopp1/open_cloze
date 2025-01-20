@@ -6,6 +6,7 @@ import tempfile
 import requests
 import zipfile
 import shutil
+import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
@@ -160,3 +161,70 @@ def setup_languages():
 
                     # Delete the temporary directory and its contents
                     shutil.rmtree(temp_dir)
+
+
+def csv_upload():
+    with st.sidebar.expander(label="Upload a CSV"):
+        st.session_state["uploaded_file"] = st.file_uploader(
+            "",
+            type=[".csv"],
+            help="Upload a CSV with at least two columns, `english` and `translation`",
+        )
+
+        st.session_state["csv_set_name"] = st.text_input("Set name of uploaded CSV", "")
+
+        st.session_state["csv_upload_button"] = st.button(
+            "Process CSV file",
+            help="Click to process the CSV file",
+        )
+
+        if st.session_state["csv_upload_button"]:
+            with st.spinner("Processing CSV"):
+                with open(
+                    f"database/{st.session_state['user_id']}/tmp.csv",
+                    "wb",
+                ) as new_file:
+                    new_file.write(
+                        st.session_state["uploaded_file"]
+                        .getvalue()
+                        .decode("latin1")
+                        .encode("latin1")
+                    )
+                    new_file.close()
+
+                tmp = pd.read_csv(f"database/{st.session_state['user_id']}/tmp.csv")
+
+                if "english" in tmp.columns and "translation" in tmp.columns:
+                    # incorporate the file into the existing database file
+                    full = pd.read_csv(
+                        f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
+                    )
+
+                    tmp["set"] = st.session_state["csv_set_name"]
+                    tmp["last_practiced"] = ""
+                    tmp["n_right"] = 0
+                    tmp["n_wrong"] = 0
+                    tmp["difficulty"] = gen_difficulty(tmp, mean_percentile=0.1)
+
+                    max_sentence_id = full.sentence_id.max()
+                    tmp["sentence_id"] = list(
+                        range(max_sentence_id + 1, max_sentence_id + 1 + len(tmp))
+                    )
+
+                    full = pd.concat([full, tmp], ignore_index=True)
+                    full.to_csv(
+                        f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
+                        index=False,
+                    )
+
+                    st.info("CSV successfully processed!")
+                else:
+                    st.error(
+                        "Please make sure your CSV has an `english` and a `translation` column`"
+                    )
+
+                # delete the temporary file
+                os.remove(f"database/{st.session_state['user_id']}/tmp.csv")
+
+                time.sleep(5)
+                st.rerun()
