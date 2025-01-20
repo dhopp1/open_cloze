@@ -8,6 +8,9 @@ def calc_stats():
         f"database/{st.session_state['user_id']}/progress.csv", parse_dates=["date"]
     )
 
+    st.markdown(f"**Set progress ({round(stats.set_progress.max() * 100, 6)}%)**")
+    st.progress(stats.set_progress.max())
+
     # date range
     if len(stats) > 0:
         min_date = stats.date.min()
@@ -35,7 +38,8 @@ def calc_stats():
                 & (
                     x.date.dt.strftime("%Y-%m-%d")
                     <= str(st.session_state["date_range"][1])
-                ),
+                )
+                & (x.set == st.session_state["selected_set"]),
                 :,
             ].reset_index(drop=True)
         except:
@@ -75,6 +79,38 @@ def calc_stats():
 
         st.plotly_chart(fig, height=450, use_container_width=True)
 
+        # linegraph of time spent
+        stats["minutes"] = stats["seconds"] / 60
+        fig = px.line(
+            stats,
+            x="date",
+            y="minutes",
+        )
+
+        fig.update_layout(
+            yaxis_title="",
+            xaxis_title="",
+            title="Minutes spent studying",
+        )
+
+        st.plotly_chart(fig, height=450, use_container_width=True)
+
+        # linegraph of set progress
+        fig = px.line(
+            stats,
+            x="date",
+            y="set_progress",
+        )
+
+        fig.update_layout(
+            yaxis_title="",
+            xaxis_title="",
+            title="Set progress over time",
+        )
+        fig.update_yaxes(tickformat=".6%")
+
+        st.plotly_chart(fig, height=450, use_container_width=True)
+
         # linegraph of correct ratio
         stats["ratio"] = stats["n_wrong"] / stats["n_sentences"]
         stats = stats.fillna(0)
@@ -88,22 +124,6 @@ def calc_stats():
             yaxis_title="",
             xaxis_title="",
             title="Wrong/Right ratio (0 = no mistakes, 2 = 2 mistakes for every correct answer)",
-        )
-
-        st.plotly_chart(fig, height=450, use_container_width=True)
-
-        # linegraph of time spent
-        stats["minutes"] = stats["seconds"] / 60
-        fig = px.line(
-            stats,
-            x="date",
-            y="minutes",
-        )
-
-        fig.update_layout(
-            yaxis_title="",
-            xaxis_title="",
-            title="Minutes spent studying",
         )
 
         st.plotly_chart(fig, height=450, use_container_width=True)

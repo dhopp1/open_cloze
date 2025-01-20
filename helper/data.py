@@ -94,7 +94,15 @@ def setup_languages():
     # make round data file for user
     if not (os.path.exists(f"database/{st.session_state['user_id']}/progress.csv")):
         pd.DataFrame(
-            columns=["date", "language", "n_sentences", "n_wrong", "seconds"]
+            columns=[
+                "date",
+                "language",
+                "set",
+                "set_progress",
+                "n_sentences",
+                "n_wrong",
+                "seconds",
+            ]
         ).to_csv(f"database/{st.session_state['user_id']}/progress.csv", index=False)
 
     # download language_files

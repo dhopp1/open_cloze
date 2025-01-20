@@ -48,6 +48,16 @@ special_char_dict = {
 }
 
 
+def ordinal(n):
+    "convert int to ordinal"
+    n = int(n)
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return str(n) + suffix
+
+
 def create_cloze_test(sentence):
     words = sentence.split()
 
@@ -116,6 +126,12 @@ def setup_round():
     ]
 
     if "sentence_list" not in st.session_state:
+        st.session_state["full_sentence_list"] = (
+            pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
+            .loc[lambda x: x.set == st.session_state["selected_set"], :]
+            .reset_index(drop=True)
+        )
+
         st.session_state["sentence_list"] = (
             pd.read_csv(f"database/{st.session_state['user_id']}/{lang_abr}.csv")
             .loc[lambda x: x.set == st.session_state["selected_set"], :]
@@ -160,6 +176,7 @@ def setup_round():
             st.session_state["sentence_sample"]["done_round"] = 0
 
             # create cloze sentences
+            st.session_state["sentence_sample"]["difficulty_percentile"] = ""
             st.session_state["sentence_sample"]["cloze_sentence"] = ""
             st.session_state["sentence_sample"]["missing_word"] = ""
             st.session_state["sentence_sample"]["word_index"] = 0
@@ -177,17 +194,23 @@ def setup_round():
                 st.session_state["sentence_sample"].loc[i, "word_index"] = word_index
 
                 # multiple choice options
-                st.session_state["sentence_sample"].loc[
-                    i, "multiple_choice"
-                ] = ",".join(
-                    gen_multiple_choice(
-                        st.session_state["sentence_list"],
-                        missing_word,
-                        n=st.session_state["num_choice"] - 1,
-                        top_n_sample=100,
-                        random_corpus_n=500,
+                st.session_state["sentence_sample"].loc[i, "multiple_choice"] = (
+                    ",".join(
+                        gen_multiple_choice(
+                            st.session_state["sentence_list"],
+                            missing_word,
+                            n=st.session_state["num_choice"] - 1,
+                            top_n_sample=100,
+                            random_corpus_n=500,
+                        )
                     )
                 )
+
+                # difficulty
+                st.session_state["sentence_sample"].loc[i, "difficulty_percentile"] = (
+                    st.session_state["full_sentence_list"].difficulty
+                    < st.session_state["sentence_sample"].loc[i, "difficulty"]
+                ).mean()
 
                 # create audio files
                 if st.session_state["gen_pronunciation"]:
@@ -229,6 +252,14 @@ def setup_round():
             .loc[
                 lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
                 "missing_word",
+            ]
+            .values[0]
+        )
+        st.session_state["difficulty_percentile"] = (
+            st.session_state["sentence_sample"]
+            .loc[
+                lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
+                "difficulty_percentile",
             ]
             .values[0]
         )
@@ -274,7 +305,7 @@ def setup_round():
 
         st.session_state["next_question"] = st.button("Next question")
         st.markdown(
-            f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining."
+            f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining. ({ordinal(round(st.session_state['difficulty_percentile'] * 100, 0))} percentile difficulty)"
         )
 
         # checking the missing word
@@ -433,6 +464,8 @@ def setup_round():
             {
                 "date": [datetime.date.today().strftime("%Y-%m-%d")],
                 "language": [st.session_state["persistent_lang_name"]],
+                "set": [st.session_state["selected_set"]],
+                "set_progress": [round((n_done / total), 6)],
                 "n_sentences": [st.session_state["num_sentences"]],
                 "n_wrong": [st.session_state["wrong_counter"]],
                 "seconds": [
@@ -441,7 +474,9 @@ def setup_round():
             }
         )
         pd.concat([progress, tmp_df], ignore_index=True).to_csv(
-            f"database/{st.session_state['user_id']}/progress.csv", index=False
+            f"database/{st.session_state['user_id']}/progress.csv",
+            index=False,
+            float_format="%.6f",
         )
 
         # deleting session state variables
