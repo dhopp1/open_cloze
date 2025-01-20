@@ -39,9 +39,15 @@ def do_transliterate(lang, sentence, engine):
     elif lang == "Arabic":
         transliteration = arabic_to_buckwalter(sentence)
     elif lang == "Hindi":
-        transliteration = engine.translit_sentence(sentence, lang_code="hi")
+        try:
+            transliteration = engine.translit_sentence(sentence, lang_code="hi")
+        except:
+            transliteration = ""
     elif lang == "Bengali":
-        transliteration = engine.translit_sentence(sentence, lang_code="bn")
+        try:
+            transliteration = engine.translit_sentence(sentence, lang_code="bn")
+        except:
+            transliteration = ""
     elif lang == "Japanese":
         result = engine.convert(sentence)
         transliteration = "".join([x["hepburn"] for x in result])
