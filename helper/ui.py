@@ -70,7 +70,7 @@ def sidebar():
 
     # generate pronunciations?
     st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
-        "Generate pronunciation?", "Add an option to read the sentence aloud"
+        "Generate pronunciation?", help="Add an option to read the sentence aloud"
     )
 
     # show transliteration?
