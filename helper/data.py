@@ -1,3 +1,4 @@
+import opencc
 import os
 import pinyin
 import pandas as pd
@@ -204,11 +205,18 @@ def setup_languages():
 
                     # add spaces for chinese and japanese
                     if lang_abr == "cmn":
+                        # tokenization
                         nlp = stanza.Pipeline(
                             "zh", processors="tokenize", download_method=None
                         )
                         data["translation"] = [
                             " ".join(segment_language(nlp, x)) for x in data.translation
+                        ]
+
+                        # converting to simplified characters
+                        converter = opencc.OpenCC("t2s.json")
+                        data["translation"] = [
+                            converter.convert(x) for x in data.translation
                         ]
                     elif lang_abr == "jpn":
                         nlp = stanza.Pipeline(
@@ -306,11 +314,18 @@ def csv_upload():
 
                     # chinese and japanese tokenization
                     if st.session_state["selected_language"] == "Mandarin":
+                        # tokenize
                         nlp = stanza.Pipeline(
                             "zh", processors="tokenize", download_method=None
                         )
                         tmp["translation"] = [
                             " ".join(segment_language(nlp, x)) for x in tmp.translation
+                        ]
+
+                        # convert to simplified characters
+                        converter = opencc.OpenCC("t2s.json")
+                        tmp["translation"] = [
+                            converter.convert(x) for x in tmp.translation
                         ]
                     elif st.session_state["selected_language"] == "Japanese":
                         nlp = stanza.Pipeline(
