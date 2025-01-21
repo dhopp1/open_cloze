@@ -3,3 +3,17 @@ channels:
   - defaults
 dependencies:
   - gxx_linux-64
+  - pip:
+    -ai4bharat-transliteration
+    -arabic_buckwalter_transliteration
+    -editdistance
+    -gtts
+    -opencc
+    -pandas
+    -pinyin
+    -plotly
+    -pykakasi
+    -scikit-learn
+    -stanza
+    -streamlit
+    -transliterate 
