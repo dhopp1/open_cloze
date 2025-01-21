@@ -386,6 +386,29 @@ def setup_round():
                 f"database/{st.session_state['user_id']}/{st.session_state['rand_sentence_id']}.mp3",
             )
 
+        # mnemonic
+        with st.expander("Mnemonic"):
+            mnemonic = str(
+                st.session_state["sentence_sample"]
+                .loc[
+                    lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
+                    "mnemonic",
+                ]
+                .values[0]
+            )
+            st.session_state["mnemonic"] = st.text_input(
+                "",
+                "" if mnemonic == "nan" else mnemonic,
+                help="Record a mnemonic here to help you remember the phrase/word.",
+            )
+            st.session_state["mnemonic_button"] = st.button("Record new mnemonic")
+            if st.session_state["mnemonic_button"]:
+                st.session_state["sentence_sample"].loc[
+                    lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
+                    "mnemonic",
+                ] = st.session_state["mnemonic"]
+                st.info("Successfully recorded mnemonic")
+
         # special characters in this language for copying
         special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
         if len(special_chars) > 0:
@@ -453,7 +476,7 @@ def setup_round():
         merged_df = pd.merge(
             st.session_state["sentence_list"],
             st.session_state["sentence_sample"].loc[
-                :, ["sentence_id", "n_right", "n_wrong", "last_practiced"]
+                :, ["mnemonic", "sentence_id", "n_right", "n_wrong", "last_practiced"]
             ],
             how="left",
             on="sentence_id",
@@ -461,6 +484,15 @@ def setup_round():
         )
 
         # overwrite values in A with values from B where key is present in B
+        merged_df["mnemonic"] = merged_df.apply(
+            lambda row: (
+                row["mnemonic_B"]
+                if not pd.isna(row["mnemonic_B"])
+                else row["mnemonic_A"]
+            ),
+            axis=1,
+        )
+
         merged_df["n_right"] = merged_df.apply(
             lambda row: (
                 row["n_right_B"] if not pd.isna(row["n_right_B"]) else row["n_right_A"]
@@ -483,6 +515,8 @@ def setup_round():
         )
         merged_df = merged_df.drop(
             [
+                "mnemonic_A",
+                "mnemonic_B",
                 "n_right_A",
                 "n_right_B",
                 "n_wrong_A",

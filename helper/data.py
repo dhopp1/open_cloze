@@ -236,6 +236,7 @@ def setup_languages():
                     data["n_right"] = 0
                     data["n_wrong"] = 0
                     data["sentence_id"] = list(range(1, len(data) + 1))
+                    data["mnemonic"] = ""
                     data = data.loc[
                         :,
                         ["sentence_id"]
@@ -311,6 +312,7 @@ def csv_upload():
                     tmp["n_right"] = 0
                     tmp["n_wrong"] = 0
                     tmp["difficulty"] = gen_difficulty(tmp, mean_percentile=0.1)
+                    tmp["mnemonic"] = ""
 
                     # chinese and japanese tokenization
                     if st.session_state["selected_language"] == "Mandarin":
