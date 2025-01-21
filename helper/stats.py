@@ -85,7 +85,19 @@ def calc_stats():
         elif st.session_state["stat_time_agg"] == "yearly":
             time_agg = "Y"
 
-        stats = stats.set_index("date").resample(time_agg).sum().reset_index()
+        stats = (
+            stats.set_index("date")
+            .resample(time_agg)
+            .agg(
+                {
+                    "set_progress": "max",
+                    "n_sentences": "sum",
+                    "n_wrong": "sum",
+                    "seconds": "sum",
+                }
+            )
+            .reset_index()
+        )
 
         # linegraph of number of sentences studied
         fig = px.line(
