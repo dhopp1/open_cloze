@@ -3,7 +3,7 @@ channels:
   - defaults
 dependencies:
   - gxx_linux-64
-  - pip:
+  - pip==24.0:
     - ai4bharat-transliteration
     - arabic_buckwalter_transliteration
     - editdistance

@@ -388,17 +388,30 @@ def setup_round():
 
         # mnemonic
         with st.expander("Mnemonic"):
-            mnemonic = str(
-                st.session_state["sentence_sample"]
-                .loc[
-                    lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
-                    "mnemonic",
-                ]
-                .values[0]
-            )
             st.session_state["mnemonic"] = st.text_input(
                 "",
-                "" if mnemonic == "nan" else mnemonic,
+                (
+                    ""
+                    if str(
+                        st.session_state["sentence_sample"]
+                        .loc[
+                            lambda x: x.sentence_id
+                            == st.session_state["rand_sentence_id"],
+                            "mnemonic",
+                        ]
+                        .values[0]
+                    )
+                    == "nan"
+                    else str(
+                        st.session_state["sentence_sample"]
+                        .loc[
+                            lambda x: x.sentence_id
+                            == st.session_state["rand_sentence_id"],
+                            "mnemonic",
+                        ]
+                        .values[0]
+                    )
+                ),
                 help="Record a mnemonic here to help you remember the phrase/word.",
             )
             st.session_state["mnemonic_button"] = st.button("Record new mnemonic")
@@ -408,6 +421,8 @@ def setup_round():
                     "mnemonic",
                 ] = st.session_state["mnemonic"]
                 st.info("Successfully recorded mnemonic")
+                time.sleep(2)
+                st.rerun()
 
         # special characters in this language for copying
         special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
