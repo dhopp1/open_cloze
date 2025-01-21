@@ -160,6 +160,36 @@ def setup_languages():
 
     # download language_files
     with st.spinner("Setting up language files..."):
+        # first try taking template db
+        try:
+            if (
+                len(
+                    [
+                        x
+                        for x in os.listdir(f"database/{st.session_state['user_id']}/")
+                        if ".csv" in x
+                    ]
+                )
+                == 1
+            ):  # check if this has already been done
+                # unzip the file
+                with zipfile.ZipFile("db_template.zip", "r") as zip_ref:
+                    zip_ref.extractall(".")
+
+                # copy to database folder
+                for file in os.listdir("db_template/"):
+                    shutil.copyfile(
+                        f"db_template/{file}",
+                        f"database/{st.session_state['user_id']}/{file}",
+                    )
+
+                # remove the unzipped directory
+                shutil.rmtree("db_template/")
+
+        # if fail, rebuild the db from scratch
+        except:
+            pass
+
         for language in st.session_state["language_options"]:
             lang_abr = st.session_state["language_key"][language][0]
 
