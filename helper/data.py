@@ -1,4 +1,9 @@
-import opencc
+try:
+    import opencc
+
+    simplify_chinese = True
+except:
+    simplify_chinese = False
 import os
 import pinyin
 import pandas as pd
@@ -214,10 +219,11 @@ def setup_languages():
                         ]
 
                         # converting to simplified characters
-                        converter = opencc.OpenCC("t2s.json")
-                        data["translation"] = [
-                            converter.convert(x) for x in data.translation
-                        ]
+                        if simplify_chinese:
+                            converter = opencc.OpenCC("t2s.json")
+                            data["translation"] = [
+                                converter.convert(x) for x in data.translation
+                            ]
                     elif lang_abr == "jpn":
                         nlp = stanza.Pipeline(
                             "ja", processors="tokenize", download_method=None
@@ -325,10 +331,11 @@ def csv_upload():
                         ]
 
                         # convert to simplified characters
-                        converter = opencc.OpenCC("t2s.json")
-                        tmp["translation"] = [
-                            converter.convert(x) for x in tmp.translation
-                        ]
+                        if simplify_chinese:
+                            converter = opencc.OpenCC("t2s.json")
+                            tmp["translation"] = [
+                                converter.convert(x) for x in tmp.translation
+                            ]
                     elif st.session_state["selected_language"] == "Japanese":
                         nlp = stanza.Pipeline(
                             "ja", processors="tokenize", download_method=None
