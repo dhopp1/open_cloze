@@ -139,23 +139,37 @@ def sidebar():
         "Generate pronunciation?", help="Add an option to read the sentence aloud"
     )
 
-    # show transliteration?
-    st.session_state["show_transliteration"] = st.sidebar.checkbox(
-        "Show transliteration/original script?",
-        help="Shows the transliteration if the language is not written in the latin script. Shows the original script if `Guess transliteration` is checked",
-    )
+    # transliteration stuff
+    if (
+        len(
+            pd.read_csv(
+                f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
+                nrows=2,
+            ).loc[lambda x: ~pd.isna(x.transliteration), :]
+        )
+        > 0
+    ):
+        # show transliteration?
+        st.session_state["show_transliteration"] = st.sidebar.checkbox(
+            "Show transliteration/original script?",
+            help="Shows the transliteration if the language is not written in the latin script. Shows the original script if `Guess transliteration` is checked",
+        )
 
-    # guess transliteration?
-    st.session_state["guess_transliteration"] = st.sidebar.checkbox(
-        "Guess transliteration",
-        help="Guess the transliteration rather than the original script",
-    )
+        # guess transliteration?
+        st.session_state["guess_transliteration"] = st.sidebar.checkbox(
+            "Guess transliteration",
+            help="Guess the transliteration rather than the original script",
+        )
 
-    # show answer in transliteration?
-    st.session_state["show_transliteration_answer"] = st.sidebar.checkbox(
-        "Show answer in transliteration?",
-        help="Whether or not to show the answer in the transliteration/original script",
-    )
+        # show answer in transliteration?
+        st.session_state["show_transliteration_answer"] = st.sidebar.checkbox(
+            "Show answer in transliteration?",
+            help="Whether or not to show the answer in the transliteration/original script",
+        )
+    else:
+        st.session_state["show_transliteration"] = False
+        st.session_state["guess_transliteration"] = False
+        st.session_state["show_transliteration_answer"] = False
 
     # run button
     st.session_state["start_round"] = st.sidebar.button(
