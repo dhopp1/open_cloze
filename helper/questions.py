@@ -111,17 +111,33 @@ def setup_round():
         ]  # because will be edited down later for quantiles
 
     # percentiles
-    lower_bound = st.session_state["sentence_list"].difficulty.quantile(
-        st.session_state["percentile"][0] / 100
-    )
-    upper_bound = st.session_state["sentence_list"].difficulty.quantile(
-        st.session_state["percentile"][1] / 100
-    )
-    st.session_state["sentence_list"] = (
-        st.session_state["sentence_list"]
-        .loc[lambda x: (x.difficulty >= lower_bound) & (x.difficulty <= upper_bound), :]
-        .reset_index(drop=True)
-    )
+    if st.session_state["randomize"]:
+        lower_bound = st.session_state["sentence_list"].difficulty.quantile(
+            st.session_state["percentile"][0] / 100
+        )
+        upper_bound = st.session_state["sentence_list"].difficulty.quantile(
+            st.session_state["percentile"][1] / 100
+        )
+        st.session_state["sentence_list"] = (
+            st.session_state["sentence_list"]
+            .loc[
+                lambda x: (x.difficulty >= lower_bound) & (x.difficulty <= upper_bound),
+                :,
+            ]
+            .reset_index(drop=True)
+        )
+    # sequential
+    else:
+        st.session_state["sentence_list"] = (
+            st.session_state["sentence_list"]
+            .loc[
+                lambda x: x.sentence_id.isin(
+                    st.session_state["sequential_sentence_ids"]
+                ),
+                :,
+            ]
+            .reset_index(drop=True)
+        )
 
     # wrong counter
     if "wrong_counter" not in st.session_state:
@@ -133,10 +149,15 @@ def setup_round():
             st.session_state["num_sentences"], len(st.session_state["sentence_list"])
         )
 
-        st.session_state["sentence_ids"] = random.sample(
-            list(st.session_state["sentence_list"]["sentence_id"]),
-            st.session_state["max_num_sentences"],
-        )
+        if st.session_state["randomize"]:
+            st.session_state["sentence_ids"] = random.sample(
+                list(st.session_state["sentence_list"]["sentence_id"]),
+                st.session_state["max_num_sentences"],
+            )
+        else:
+            st.session_state["sentence_ids"] = st.session_state[
+                "sequential_sentence_ids"
+            ]
 
     if "sentence_sample" not in st.session_state:
         with st.spinner("Setting up sample..."):
@@ -228,9 +249,16 @@ def setup_round():
 
     if len(st.session_state["remaining_sample"]) > 0:
         if "rand_sentence_id" not in st.session_state:
-            st.session_state["rand_sentence_id"] = random.choice(
-                st.session_state["remaining_sample"]
-            )
+            # randomized next choice
+            if st.session_state["randomize"]:
+                st.session_state["rand_sentence_id"] = random.choice(
+                    st.session_state["remaining_sample"]
+                )
+            # next choice in sequence
+            else:
+                st.session_state["rand_sentence_id"] = st.session_state["sentence_ids"][
+                    0
+                ]
 
         st.session_state["english"] = (
             st.session_state["sentence_sample"]
@@ -305,7 +333,7 @@ def setup_round():
 
         st.session_state["next_question"] = st.button("Next question")
         st.markdown(
-            f"{len(st.session_state['remaining_sample'])}/{st.session_state['num_sentences']} sentences remaining. ({ordinal(round(st.session_state['difficulty_percentile'] * 100, 0))} percentile difficulty)"
+            f"{len(st.session_state['remaining_sample'])}/{len(st.session_state['sentence_ids'])} sentences remaining. ({ordinal(round(st.session_state['difficulty_percentile'] * 100, 0))} percentile difficulty)"
         )
 
         # checking the missing word
@@ -415,9 +443,24 @@ def setup_round():
 
         if st.session_state["next_question"]:
             # load a new question
-            st.session_state["rand_sentence_id"] = random.choice(
-                st.session_state["remaining_sample"]
-            )
+            if st.session_state["randomize"]:
+                st.session_state["rand_sentence_id"] = random.choice(
+                    st.session_state["remaining_sample"]
+                )
+            else:
+                try:
+                    st.session_state["rand_sentence_id"] = st.session_state[
+                        "sentence_ids"
+                    ][
+                        st.session_state["sentence_ids"].index(
+                            st.session_state["rand_sentence_id"]
+                        )
+                        + 1
+                    ]
+                except:
+                    st.session_state["rand_sentence_id"] = min(
+                        st.session_state["remaining_sample"]
+                    )  # go to the beginning of the remaining sample
 
             st.session_state["remaining_sample"] = list(
                 st.session_state["sentence_sample"]

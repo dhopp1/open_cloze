@@ -61,15 +61,72 @@ def sidebar():
                 index=0,
             )
 
-    # how many sentences
-    st.session_state["num_sentences"] = st.sidebar.number_input(
-        "How many sentences in one round",
-        min_value=1,
-        value=10,
+    # randomize
+    st.session_state["randomize"] = st.sidebar.checkbox(
+        "Randomly sample questions?",
+        value=True,
+        help="If selected, sentences will be randomly selected for a round. If not, sentences will be sequentialy presented.",
     )
+
+    # how many sentences
+    if st.session_state["randomize"]:
+        st.session_state["num_sentences"] = st.sidebar.number_input(
+            "How many sentences in one round",
+            min_value=1,
+            value=10,
+        )
+
+        # percentile difficulty slider
+        st.session_state["percentile"] = st.sidebar.slider(
+            "Difficulty percentiles",
+            min_value=0,
+            max_value=100,
+            value=(0, 100),
+            help="Which difficulty percentile to sample from. Lower value = easier sentences.",
+        )
+    else:
+        # not random, show sentence numbers
+        # info on sentence numbers
+        st.session_state["set_info"] = pd.read_csv(
+            f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
+            usecols=["sentence_id", "set"],
+            low_memory=True,
+        ).loc[lambda x: x.set == st.session_state["selected_set"], :]
+
+        col1, col2 = st.sidebar.columns(2)
+        st.session_state["sequential_selection_1"] = col1.number_input(
+            "Sentence number start",
+            min_value=1,
+            max_value=len(st.session_state["set_info"]),
+            value=1,
+        )
+        st.session_state["sequential_selection_2"] = col2.number_input(
+            "Sentence number end",
+            min_value=1,
+            max_value=len(st.session_state["set_info"]),
+            value=len(st.session_state["set_info"]),
+        )
+
+        st.session_state["sequential_sentence_ids"] = list(
+            st.session_state["set_info"]
+            .loc[
+                (st.session_state["sequential_selection_1"] - 1) : (
+                    st.session_state["sequential_selection_2"] - 1
+                ),
+                "sentence_id",
+            ]
+            .values
+        )
 
     # use multiple choice?
     st.session_state["use_choice"] = st.sidebar.checkbox("Use multiple choice?")
+
+    # how many options for multiple choice
+    st.session_state["num_choice"] = st.sidebar.number_input(
+        "How many options to display for multiple choice",
+        min_value=2,
+        value=4,
+    )
 
     # generate pronunciations?
     st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
@@ -92,21 +149,6 @@ def sidebar():
     st.session_state["show_transliteration_answer"] = st.sidebar.checkbox(
         "Show answer in transliteration?",
         help="Whether or not to show the answer in the transliteration/original script",
-    )
-
-    # how many options for multiple choice
-    st.session_state["num_choice"] = st.sidebar.number_input(
-        "How many options to display for multiple choice",
-        min_value=2,
-        value=4,
-    )
-
-    # percentile difficulty slider
-    st.session_state["percentile"] = st.sidebar.slider(
-        "Difficulty percentiles",
-        min_value=0,
-        max_value=100,
-        value=(0, 100),
     )
 
     # run button
