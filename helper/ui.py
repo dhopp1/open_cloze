@@ -39,7 +39,7 @@ def sidebar():
     st.session_state["selected_language"] = st.sidebar.selectbox(
         "Select language",
         options=st.session_state["language_options"],
-        index=9,
+        index=10,
     )
 
     # set selector
@@ -122,11 +122,14 @@ def sidebar():
     st.session_state["use_choice"] = st.sidebar.checkbox("Use multiple choice?")
 
     # how many options for multiple choice
-    st.session_state["num_choice"] = st.sidebar.number_input(
-        "How many options to display for multiple choice",
-        min_value=2,
-        value=4,
-    )
+    if st.session_state["use_choice"]:
+        st.session_state["num_choice"] = st.sidebar.number_input(
+            "How many options to display for multiple choice",
+            min_value=2,
+            value=4,
+        )
+    else:
+        st.session_state["num_choice"] = 4
 
     # generate pronunciations?
     st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
