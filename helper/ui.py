@@ -87,11 +87,15 @@ def sidebar():
     else:
         # not random, show sentence numbers
         # info on sentence numbers
-        st.session_state["set_info"] = pd.read_csv(
-            f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
-            usecols=["sentence_id", "set"],
-            low_memory=True,
-        ).loc[lambda x: x.set == st.session_state["selected_set"], :]
+        st.session_state["set_info"] = (
+            pd.read_csv(
+                f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
+                usecols=["sentence_id", "set"],
+                low_memory=True,
+            )
+            .loc[lambda x: x.set == st.session_state["selected_set"], :]
+            .reset_index(drop=True)
+        )
 
         col1, col2 = st.sidebar.columns(2)
         st.session_state["sequential_selection_1"] = col1.number_input(
@@ -110,9 +114,8 @@ def sidebar():
         st.session_state["sequential_sentence_ids"] = list(
             st.session_state["set_info"]
             .loc[
-                (st.session_state["sequential_selection_1"] - 1) : (
-                    st.session_state["sequential_selection_2"] - 1
-                ),
+                lambda x: (x.index >= st.session_state["sequential_selection_1"] - 1)
+                & (x.index <= st.session_state["sequential_selection_2"] - 1),
                 "sentence_id",
             ]
             .values

@@ -443,6 +443,12 @@ def setup_round():
 
         if st.session_state["next_question"]:
             # load a new question
+            st.session_state["remaining_sample"] = list(
+                st.session_state["sentence_sample"]
+                .loc[lambda x: x.done_round == 0, "sentence_id"]
+                .values
+            )
+
             if st.session_state["randomize"]:
                 st.session_state["rand_sentence_id"] = random.choice(
                     st.session_state["remaining_sample"]
@@ -450,23 +456,20 @@ def setup_round():
             else:
                 try:
                     st.session_state["rand_sentence_id"] = st.session_state[
-                        "sentence_ids"
+                        "remaining_sample"
                     ][
-                        st.session_state["sentence_ids"].index(
+                        st.session_state["remaining_sample"].index(
                             st.session_state["rand_sentence_id"]
                         )
                         + 1
                     ]
                 except:
-                    st.session_state["rand_sentence_id"] = min(
-                        st.session_state["remaining_sample"]
-                    )  # go to the beginning of the remaining sample
-
-            st.session_state["remaining_sample"] = list(
-                st.session_state["sentence_sample"]
-                .loc[lambda x: x.done_round == 0, "sentence_id"]
-                .values
-            )
+                    try:
+                        st.session_state["rand_sentence_id"] = min(
+                            st.session_state["remaining_sample"]
+                        )  # go to the beginning of the remaining sample
+                    except:
+                        pass
 
             try:
                 del st.session_state["options"]
@@ -498,13 +501,27 @@ def setup_round():
         st.session_state["sentence_list"] = pd.read_csv(
             f"database/{st.session_state['user_id']}/{lang_abr}.csv"
         )
-        n_done = len(st.session_state["sentence_list"].loc[lambda x: x.n_right >= 1, :])
-        total = len(st.session_state["sentence_list"])
+        total = len(
+            st.session_state["sentence_list"].loc[
+                lambda x: x.set == st.session_state["selected_set"], :
+            ]
+        )
+        n_done = min(
+            total,
+            len(
+                st.session_state["sentence_list"].loc[
+                    lambda x: (x.n_right >= 1)
+                    & (x.set == st.session_state["selected_set"]),
+                    :,
+                ]
+            )
+            + len(st.session_state["sentence_sample"]),
+        )  # include those you just did
 
         st.session_state["end_time"] = time.time()
 
         st.info(
-            f"Successfully studied {st.session_state['num_sentences']} sentences in {round((st.session_state['end_time'] - st.session_state['start_time'])/60, 0):.0f} minute(s). You have studied {(n_done/total * 100):.6f}% of sentences."
+            f"Successfully studied {len(st.session_state['sentence_ids'])} sentences in {round((st.session_state['end_time'] - st.session_state['start_time'])/60, 0):.0f} minute(s). You have studied {(n_done/total * 100):.6f}% of sentences."
         )
 
         # saving progress to disk

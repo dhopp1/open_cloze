@@ -12,14 +12,44 @@ import stanza
 import string
 import streamlit as st
 import tempfile
+import re
 import requests
 import zipfile
 import shutil
 import time
 from ai4bharat.transliteration import XlitEngine
 from arabic_buckwalter_transliteration.transliteration import arabic_to_buckwalter
+from mtranslate import translate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from transliterate import translit
+
+
+def google_trans(stringx, source_lang):
+    "google translate a text and put it in sentence pair format"
+    punc_list = [".", "!", "?", "。", "？", "！"]
+    sentences = re.split(rf'([{"".join(punc_list)}])', stringx)
+
+    # adding back punctuation
+    for i in range(1, len(sentences)):
+        if sentences[i] in punc_list:
+            sentences[i - 1] = sentences[i - 1] + sentences[i]
+
+    sentences = [x for x in sentences if x not in punc_list + [""]]
+    translated_sentences = [""] * len(sentences)
+
+    for i in range(len(sentences)):
+        translated_sentences[i] = translate(sentences[i], "en", source_lang)
+
+    data = pd.DataFrame(
+        {
+            "english": translated_sentences,
+            "translation": sentences,
+        }
+    )
+
+    data = data.loc[lambda x: (x.english != "") & (x.translation != ""), :]
+
+    return data
 
 
 # segment chinese and japanese
@@ -279,35 +309,74 @@ def setup_languages():
 
 
 def csv_upload():
-    with st.sidebar.expander(label="Upload a CSV"):
+    with st.sidebar.expander(label="Upload data"):
         st.session_state["uploaded_file"] = st.file_uploader(
             "",
-            type=[".csv"],
-            help="Upload a CSV with at least two columns, `english` and `translation`",
+            type=[".csv", ".txt"],
+            help="Upload a CSV with at least two columns, `english` and `translation`, or a .txt file in your learning language. If a .txt file is uploaded, it will be translated with Google translate and the sentence pairs will automatically be created.",
         )
 
-        st.session_state["csv_set_name"] = st.text_input("Set name of uploaded CSV", "")
+        # direct text input
+        st.session_state["direct_text"] = st.text_input(
+            "Paste text directly",
+            "",
+            help="Paste text to add directly here rather than upload a file.",
+        )
+
+        st.session_state["csv_set_name"] = st.text_input(
+            "Set name of uploaded data", ""
+        )
 
         st.session_state["csv_upload_button"] = st.button(
-            "Process CSV file",
-            help="Click to process the CSV file",
+            "Process data file",
+            help="Click to process the data file",
         )
 
         if st.session_state["csv_upload_button"]:
-            with st.spinner("Processing CSV"):
-                with open(
-                    f"database/{st.session_state['user_id']}/tmp.csv",
-                    "wb",
-                ) as new_file:
-                    new_file.write(
-                        st.session_state["uploaded_file"]
-                        .getvalue()
-                        .decode("latin1")
-                        .encode("latin1")
+            with st.spinner("Processing data..."):
+                # file upload
+                try:
+                    extension = (
+                        st.session_state["uploaded_file"].name.split(".")[-1].lower()
                     )
-                    new_file.close()
 
-                tmp = pd.read_csv(f"database/{st.session_state['user_id']}/tmp.csv")
+                    with open(
+                        f"database/{st.session_state['user_id']}/tmp.{extension}",
+                        "wb",
+                    ) as new_file:
+                        new_file.write(
+                            st.session_state["uploaded_file"]
+                            .getvalue()
+                            .decode("latin1")
+                            .encode("latin1")
+                        )
+                        new_file.close()
+
+                    if extension == "csv":
+                        tmp = pd.read_csv(
+                            f"database/{st.session_state['user_id']}/tmp.csv"
+                        )
+                    else:
+                        # function for google translate .txt to autogenerate sentences
+                        with open(
+                            f"database/{st.session_state['user_id']}/tmp.{extension}",
+                            "r",
+                        ) as file:
+                            stringx = file.read()
+                        tmp = google_trans(
+                            stringx,
+                            st.session_state["language_key"][
+                                st.session_state["selected_language"]
+                            ][1],
+                        )
+                    # direct text pasting
+                except:
+                    tmp = google_trans(
+                        st.session_state["direct_text"],
+                        st.session_state["language_key"][
+                            st.session_state["selected_language"]
+                        ][1],
+                    )
 
                 if "english" in tmp.columns and "translation" in tmp.columns:
                     if st.session_state["selected_language"] in ["Hindi", "Bengali"]:
@@ -375,14 +444,41 @@ def csv_upload():
                         index=False,
                     )
 
-                    st.info("CSV successfully processed!")
+                    st.info("Data successfully processed!")
                 else:
                     st.error(
                         "Please make sure your CSV has an `english` and a `translation` column`"
                     )
 
                 # delete the temporary file
-                os.remove(f"database/{st.session_state['user_id']}/tmp.csv")
+                try:
+                    os.remove(f"database/{st.session_state['user_id']}/tmp.{extension}")
+                except:
+                    pass
 
                 time.sleep(5)
                 st.rerun()
+
+        # clear out a set
+        st.session_state["csv_clear_button"] = st.button(
+            "Delete set from database",
+            help="Click to remove a set from your database to clean it up. It will remove the set with the name in the field `Set name of uploaded data`.",
+        )
+
+        if st.session_state["csv_clear_button"]:
+            data = pd.read_csv(
+                f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
+            )
+            data = data.loc[
+                lambda x: (x.set != st.session_state["csv_set_name"])
+                & (x.set != "")
+                & (~pd.isna(x.set)),
+                :,
+            ].reset_index(drop=True)
+            data.to_csv(
+                f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv",
+                index=False,
+            )
+            st.info("Set successfully removed!")
+            time.sleep(2)
+            st.rerun()
