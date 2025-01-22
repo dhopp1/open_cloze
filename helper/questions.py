@@ -443,12 +443,6 @@ def setup_round():
 
         if st.session_state["next_question"]:
             # load a new question
-            st.session_state["remaining_sample"] = list(
-                st.session_state["sentence_sample"]
-                .loc[lambda x: x.done_round == 0, "sentence_id"]
-                .values
-            )
-
             if st.session_state["randomize"]:
                 st.session_state["rand_sentence_id"] = random.choice(
                     st.session_state["remaining_sample"]
@@ -475,6 +469,12 @@ def setup_round():
                 del st.session_state["options"]
             except:
                 pass
+
+            st.session_state["remaining_sample"] = list(
+                st.session_state["sentence_sample"]
+                .loc[lambda x: x.done_round == 0, "sentence_id"]
+                .values
+            )
 
             st.rerun()
 
@@ -520,108 +520,119 @@ def setup_round():
 
         st.session_state["end_time"] = time.time()
 
-        st.info(
-            f"Successfully studied {len(st.session_state['sentence_ids'])} sentences in {round((st.session_state['end_time'] - st.session_state['start_time'])/60, 0):.0f} minute(s). You have studied {(n_done/total * 100):.6f}% of sentences."
-        )
-
-        # saving progress to disk
-        # recording the date
-        st.session_state["sentence_sample"].loc[
-            :, "last_practiced"
-        ] = datetime.date.today().strftime("%Y-%m-%d")
-        merged_df = pd.merge(
-            st.session_state["sentence_list"],
+        with st.spinner("Recording progress..."):
+            # saving progress to disk
+            # recording the date
             st.session_state["sentence_sample"].loc[
-                :, ["mnemonic", "sentence_id", "n_right", "n_wrong", "last_practiced"]
-            ],
-            how="left",
-            on="sentence_id",
-            suffixes=("_A", "_B"),
-        )
-
-        # overwrite values in A with values from B where key is present in B
-        merged_df["mnemonic"] = merged_df.apply(
-            lambda row: (
-                row["mnemonic_B"]
-                if not pd.isna(row["mnemonic_B"])
-                else row["mnemonic_A"]
-            ),
-            axis=1,
-        )
-
-        merged_df["n_right"] = merged_df.apply(
-            lambda row: (
-                row["n_right_B"] if not pd.isna(row["n_right_B"]) else row["n_right_A"]
-            ),
-            axis=1,
-        )
-        merged_df["n_wrong"] = merged_df.apply(
-            lambda row: (
-                row["n_wrong_B"] if not pd.isna(row["n_wrong_B"]) else row["n_wrong_A"]
-            ),
-            axis=1,
-        )
-        merged_df["last_practiced"] = merged_df.apply(
-            lambda row: (
-                row["last_practiced_B"]
-                if not pd.isna(row["last_practiced_B"])
-                else row["last_practiced_A"]
-            ),
-            axis=1,
-        )
-        merged_df = merged_df.drop(
-            [
-                "mnemonic_A",
-                "mnemonic_B",
-                "n_right_A",
-                "n_right_B",
-                "n_wrong_A",
-                "n_wrong_B",
-                "last_practiced_A",
-                "last_practiced_B",
-            ],
-            axis=1,
-        )
-        merged_df.to_csv(
-            f"database/{st.session_state['user_id']}/{lang_abr}.csv", index=False
-        )
-
-        # progress file
-        progress = pd.read_csv(f"database/{st.session_state['user_id']}/progress.csv")
-        tmp_df = pd.DataFrame(
-            {
-                "date": [datetime.date.today().strftime("%Y-%m-%d")],
-                "language": [st.session_state["persistent_lang_name"]],
-                "set": [st.session_state["selected_set"]],
-                "set_progress": [round((n_done / total), 6)],
-                "n_sentences": [st.session_state["num_sentences"]],
-                "n_wrong": [st.session_state["wrong_counter"]],
-                "seconds": [
-                    st.session_state["end_time"] - st.session_state["start_time"]
+                :, "last_practiced"
+            ] = datetime.date.today().strftime("%Y-%m-%d")
+            merged_df = pd.merge(
+                st.session_state["sentence_list"],
+                st.session_state["sentence_sample"].loc[
+                    :,
+                    ["mnemonic", "sentence_id", "n_right", "n_wrong", "last_practiced"],
                 ],
-            }
-        )
-        pd.concat([progress, tmp_df], ignore_index=True).to_csv(
-            f"database/{st.session_state['user_id']}/progress.csv",
-            index=False,
-            float_format="%.6f",
-        )
+                how="left",
+                on="sentence_id",
+                suffixes=("_A", "_B"),
+            )
 
-        # deleting session state variables
-        try:
-            del st.session_state["sentence_list"]
-            del st.session_state["wrong_counter"]
-            del st.session_state["sentence_ids"]
-            del st.session_state["sentence_sample"]
-            del st.session_state["remaining_sample"]
-            del st.session_state["rand_sentence_id"]
-        except:
-            pass
+            # overwrite values in A with values from B where key is present in B
+            merged_df["mnemonic"] = merged_df.apply(
+                lambda row: (
+                    row["mnemonic_B"]
+                    if not pd.isna(row["mnemonic_B"])
+                    else row["mnemonic_A"]
+                ),
+                axis=1,
+            )
 
-        # deleting audio files
-        mp3_files = glob.glob(
-            os.path.join(f"database/{st.session_state['user_id']}/", "*.mp3")
-        )
-        if len(mp3_files) > 0:
-            for file in mp3_files:
-                os.remove(file)
+            merged_df["n_right"] = merged_df.apply(
+                lambda row: (
+                    row["n_right_B"]
+                    if not pd.isna(row["n_right_B"])
+                    else row["n_right_A"]
+                ),
+                axis=1,
+            )
+            merged_df["n_wrong"] = merged_df.apply(
+                lambda row: (
+                    row["n_wrong_B"]
+                    if not pd.isna(row["n_wrong_B"])
+                    else row["n_wrong_A"]
+                ),
+                axis=1,
+            )
+            merged_df["last_practiced"] = merged_df.apply(
+                lambda row: (
+                    row["last_practiced_B"]
+                    if not pd.isna(row["last_practiced_B"])
+                    else row["last_practiced_A"]
+                ),
+                axis=1,
+            )
+            merged_df = merged_df.drop(
+                [
+                    "mnemonic_A",
+                    "mnemonic_B",
+                    "n_right_A",
+                    "n_right_B",
+                    "n_wrong_A",
+                    "n_wrong_B",
+                    "last_practiced_A",
+                    "last_practiced_B",
+                ],
+                axis=1,
+            )
+            merged_df.to_csv(
+                f"database/{st.session_state['user_id']}/{lang_abr}.csv", index=False
+            )
+
+            # progress file
+            progress = pd.read_csv(
+                f"database/{st.session_state['user_id']}/progress.csv"
+            )
+            tmp_df = pd.DataFrame(
+                {
+                    "date": [datetime.date.today().strftime("%Y-%m-%d")],
+                    "language": [st.session_state["persistent_lang_name"]],
+                    "set": [st.session_state["selected_set"]],
+                    "set_progress": [round((n_done / total), 6)],
+                    "n_sentences": [st.session_state["num_sentences"]],
+                    "n_wrong": [st.session_state["wrong_counter"]],
+                    "seconds": [
+                        st.session_state["end_time"] - st.session_state["start_time"]
+                    ],
+                }
+            )
+            pd.concat([progress, tmp_df], ignore_index=True).to_csv(
+                f"database/{st.session_state['user_id']}/progress.csv",
+                index=False,
+                float_format="%.6f",
+            )
+
+            # deleting audio files
+            mp3_files = glob.glob(
+                os.path.join(f"database/{st.session_state['user_id']}/", "*.mp3")
+            )
+            if len(mp3_files) > 0:
+                for file in mp3_files:
+                    os.remove(file)
+
+            # success message
+            st.info(
+                f"Successfully studied {len(st.session_state['sentence_ids'])} sentences in {round((st.session_state['end_time'] - st.session_state['start_time'])/60, 0):.0f} minute(s). You have studied {(n_done/total * 100):.6f}% of sentences."
+            )
+
+            # deleting session state variables
+            try:
+                del st.session_state["sentence_list"]
+                del st.session_state["wrong_counter"]
+                del st.session_state["sentence_ids"]
+                del st.session_state["sentence_sample"]
+                del st.session_state["remaining_sample"]
+                del st.session_state["rand_sentence_id"]
+            except:
+                pass
+
+            st.session_state["restart_round"] = st.button("Replay")

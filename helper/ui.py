@@ -181,7 +181,10 @@ def show_round():
     if "active" not in st.session_state:
         st.session_state["active"] = 0
 
-    if st.session_state["start_round"]:
+    if "restart_round" not in st.session_state:
+        st.session_state["restart_round"] = False
+
+    if st.session_state["start_round"] or st.session_state["restart_round"]:
         # end mid-round
         try:
             del st.session_state["sentence_list"]
