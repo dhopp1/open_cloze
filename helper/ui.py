@@ -14,6 +14,9 @@ def ui_tab():
         layout="wide",
     )
 
+    if "metadata" not in st.session_state:
+        st.session_state["metadata"] = pd.read_csv("metadata.csv")
+
 
 def import_styles():
     "import styles sheet"

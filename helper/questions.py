@@ -10,60 +10,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
-special_char_dict = {
-    "Arabic": [],
-    "Bengali": [],
-    "Czech": [
-        "á",
-        "č",
-        "ď",
-        "é",
-        "ě",
-        "í",
-        "ň",
-        "ó",
-        "ř",
-        "š",
-        "ť",
-        "ú",
-        "ů",
-        "ý",
-        "ž",
-    ],
-    "Danish": ["æ", "ø", "å"],
-    "Dutch": ["é"],
-    "French": [
-        "à",
-        "â",
-        "ç",
-        "é",
-        "è",
-        "ê",
-        "ë",
-        "î",
-        "ï",
-        "ô",
-        "ù",
-        "û",
-        "ü",
-        "œ",
-        "æ",
-    ],
-    "German": ["ä", "ö", "ü", "ß"],
-    "Greek": [],
-    "Hindi": [],
-    "Hungarian": ["á", "é", "í", "ó", "ú", "ö", "ő", "ü", "ű"],
-    "Italian": ["à", "é", "è", "ì", "ò", "ù"],
-    "Japanese": [],
-    "Mandarin": [],
-    "Norwegian": ["å", "æ", "ø"],
-    "Portuguese": ["á", "â", "ã", "à", "ç", "é", "ê", "í", "ó", "ô", "õ", "ú"],
-    "Romanian": ["ă", "â", "î", "ș", "ț"],
-    "Russian": [],
-    "Spanish": ["á", "é", "í", "ñ", "ó", "ú", "ý"],
-    "Turkish": ["ç", "ğ", "ö", "ş", "ü"],
-}
-
 
 def ordinal(n):
     "convert int to ordinal"
@@ -441,7 +387,26 @@ def setup_round():
                 st.rerun()
 
         # special characters in this language for copying
-        special_chars = special_char_dict[st.session_state["persistent_lang_name"]]
+        if "special_char_dict" not in st.session_state:
+            st.session_state["special_char_dict"] = dict(
+                zip(
+                    list(
+                        st.session_state["metadata"]
+                        .loc[lambda x: x.field == "language", "value"]
+                        .values
+                    ),
+                    [
+                        x.split(",") if str(x) != "nan" else []
+                        for x in st.session_state["metadata"]
+                        .loc[lambda x: x.field == "language", "special_chars"]
+                        .values.tolist()
+                    ],
+                )
+            )
+
+        special_chars = st.session_state["special_char_dict"][
+            st.session_state["persistent_lang_name"]
+        ]
         if len(special_chars) > 0:
             st.markdown("**Special characters**")
             upper_chars = [x.upper() for x in special_chars]

@@ -117,28 +117,18 @@ def gen_difficulty(corpus, mean_percentile=0.1):
 
 def setup_languages():
     if "language_key" not in st.session_state:
-        st.session_state["language_key"] = {
-            "Arabic": ["ara", "ar"],
-            "Bengali": ["ben", "bn"],
-            "Czech": ["ces", "cs"],
-            "Danish": ["dan", "da"],
-            "Dutch": ["nld", "nl"],
-            "French": ["fra", "fr"],
-            "German": ["deu", "de"],
-            "Greek": ["ell", "el"],
-            "Hindi": ["hin", "hi"],
-            "Hungarian": ["hun", "hu"],
-            "Italian": ["ita", "it"],
-            "Japanese": ["jpn", "ja"],
-            "Mandarin": ["cmn", "zh"],
-            "Norwegian": ["nob", "no"],
-            "Portuguese": ["por", "pt"],
-            "Romanian": ["ron", "ro"],
-            "Russian": ["rus", "ru"],
-            "Spanish": ["spa", "es"],
-            "Swedish": ["swe", "sv"],
-            "Turkish": ["tur", "tr"],
-        }
+        st.session_state["language_key"] = dict(
+            zip(
+                list(
+                    st.session_state["metadata"]
+                    .loc[lambda x: x.field == "language", "value"]
+                    .values
+                ),
+                st.session_state["metadata"]
+                .loc[lambda x: x.field == "language", ["manythings_abbr", "gt_abbr"]]
+                .values.tolist(),
+            )
+        )
 
     # see if database exists for user
     if not (os.path.exists(f"database/{st.session_state['user_id']}")):

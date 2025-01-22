@@ -9,7 +9,7 @@ def check_password():
     # user list
     if "users_list" not in st.session_state:
         st.session_state["users_list"] = list(
-            pd.read_csv("metadata.csv")
+            st.session_state["metadata"]
             .loc[lambda x: x.field == "username", "value"]
             .values
         )
