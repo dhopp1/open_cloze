@@ -31,7 +31,7 @@ def calc_stats():
 
     st.progress(
         progress_value,
-        text=f"**Set progress ({round(progress_value * 100, 6)}% of {len(sentences):,} sentences)**",
+        text=f"**Set progress ({round(progress_value * 100, 6)}%, {int(progress_value * len(sentences))}  of {len(sentences):,} sentences)**",
     )
 
     # date range
