@@ -171,6 +171,13 @@ def sidebar():
         st.session_state["guess_transliteration"] = False
         st.session_state["show_transliteration_answer"] = False
 
+    # gemini API key
+    st.session_state["api_key"] = st.sidebar.text_input(
+        "Gemini API key",
+        value="",
+        help="Gemini API key. This will allow you to generate LLM explanations of sentences.",
+    )
+
     # run button
     st.session_state["start_round"] = st.sidebar.button(
         "Start the round",

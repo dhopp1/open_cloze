@@ -10,6 +10,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
+from helper.llm import get_gemini
+
 
 def ordinal(n):
     "convert int to ordinal"
@@ -370,6 +372,65 @@ def setup_round():
                     + 1
                 )
 
+            # llm
+            if st.session_state["api_key"] != "":
+                st.session_state["gen_llm_button"] = st.button(
+                    "Generate an LLM explanation"
+                )
+                if st.session_state["gen_llm_button"]:
+                    with st.spinner("Generating LLM explanation..."):
+                        # first questions
+                        if "query" not in st.session_state:
+                            try:
+                                st.session_state["query"] = (
+                                    st.session_state["sentence_sample"]
+                                    .loc[
+                                        lambda x: x.sentence_id
+                                        == st.session_state["rand_sentence_id"],
+                                        "translation",
+                                    ]
+                                    .values[0]
+                                )
+                                st.session_state["query"] = (
+                                    f"Break down the grammer of this {st.session_state['persistent_lang_name']} sentence in a clear and logical way for a language learner to understand, restate the sentence at the top of your answer: {st.session_state['query']}"
+                                )
+
+                                st.session_state["response"] = get_gemini(
+                                    st.session_state["query"],
+                                    st.session_state["api_key"],
+                                )
+                            except:
+                                st.session_state["response"] = (
+                                    "Error generating LLM response."
+                                )
+                            st.session_state["new_query"] = st.text_input(
+                                "Follow up question", value=""
+                            )
+                        else:
+                            st.session_state["new_query"] = st.text_input(
+                                "Follow up question", value=""
+                            )
+                            try:
+                                st.session_state["query"] = (
+                                    f"Answer this questiona about {st.session_state['persistent_lang_name']} grammar: {st.session_state['new_query']}. This is the context of the question: {st.session_state['response']}"
+                                )
+
+                                st.session_state["response"] = (
+                                    f'{get_gemini(st.session_state["query"], st.session_state["api_key"])} \n\n **----Prior answer----** \n\n {st.session_state["response"]}'
+                                )
+                            except:
+                                st.session_state["response"] = (
+                                    "Error generating LLM response."
+                                )
+
+                        if (
+                            st.session_state["response"]
+                            == "Error generating LLM response."
+                        ):
+                            st.error(st.session_state["response"])
+                        else:
+                            st.info(st.session_state["response"])
+
         # play audio
         if st.session_state["gen_pronunciation"]:
             st.audio(
@@ -467,6 +528,12 @@ def setup_round():
 
             try:
                 del st.session_state["options"]
+            except:
+                pass
+
+            try:
+                del st.session_state["query"]
+                del st.session_state["response"]
             except:
                 pass
 

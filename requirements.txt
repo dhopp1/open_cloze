@@ -1,6 +1,7 @@
 ai4bharat-transliteration
 arabic_buckwalter_transliteration
 editdistance
+google-generativeai
 gtts
 mtranslate
 opencc
