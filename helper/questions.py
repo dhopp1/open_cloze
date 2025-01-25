@@ -699,7 +699,9 @@ def setup_round():
                 del st.session_state["sentence_sample"]
                 del st.session_state["remaining_sample"]
                 del st.session_state["rand_sentence_id"]
+                del st.session_state["start_time"]
             except:
                 pass
 
             st.session_state["restart_round"] = st.button("Replay")
+            st.session_state["start_time"] = time.time()
