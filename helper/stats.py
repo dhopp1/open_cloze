@@ -98,6 +98,7 @@ def calc_stats():
             )
             .reset_index()
         )
+        stats["set_progress"] = stats["set_progress"].ffill()
 
         # linegraph of number of sentences studied
         fig = px.line(
