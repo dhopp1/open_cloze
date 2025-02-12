@@ -73,7 +73,7 @@ def sidebar():
         st.session_state["num_sentences"] = st.sidebar.number_input(
             "How many sentences in one round",
             min_value=1,
-            value=10,
+            value=5,
         )
 
         # percentile difficulty slider
@@ -122,7 +122,9 @@ def sidebar():
         )
 
     # use multiple choice?
-    st.session_state["use_choice"] = st.sidebar.checkbox("Use multiple choice?")
+    st.session_state["use_choice"] = st.sidebar.checkbox(
+        "Use multiple choice?", value=True
+    )
 
     # how many options for multiple choice
     if st.session_state["use_choice"]:
@@ -133,6 +135,13 @@ def sidebar():
         )
     else:
         st.session_state["num_choice"] = 4
+
+    # how many missing spaces
+    st.session_state["n_missing"] = st.sidebar.number_input(
+        "How many missing words in the cloze sentence",
+        min_value=1,
+        value=1,
+    )
 
     # generate pronunciations?
     st.session_state["gen_pronunciation"] = st.sidebar.checkbox(
@@ -191,7 +200,7 @@ def show_round():
     if "restart_round" not in st.session_state:
         st.session_state["restart_round"] = False
 
-    if st.session_state["start_round"] or st.session_state["restart_round"]:
+    if (st.session_state["start_round"]) or (st.session_state["restart_round"]):
         # end mid-round
         try:
             del st.session_state["sentence_list"]
@@ -201,7 +210,7 @@ def show_round():
             del st.session_state["remaining_sample"]
             del st.session_state["rand_sentence_id"]
             try:
-                del st.session_state["options"]
+                del st.session_state["options_0"]
             except:
                 pass
         except:
@@ -212,5 +221,9 @@ def show_round():
 
         setup_round()
 
-    if (st.session_state["active"] == 1) and not (st.session_state["start_round"]):
+    if (
+        (st.session_state["active"] == 1)
+        and not (st.session_state["start_round"])
+        and not (st.session_state["restart_round"])
+    ):
         setup_round()

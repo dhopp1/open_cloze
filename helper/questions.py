@@ -24,26 +24,34 @@ def ordinal(n):
 
 
 def create_cloze_test(
-    sentence, reverse=False
+    sentence, reverse=False, n_missing=1
 ):  # reverse for right to left language like arabic
     words = sentence.split()
 
-    acceptable = False
-    while not (acceptable):
-        blank_index = random.randint(0, len(words) - 1)
-        blank_word = words[blank_index]
+    # acceptable words to be missing
+    good_range = [
+        i
+        for i in range(len(words))
+        if words[i] not in ["?", ".", ",", "!", "。", "、", "？"]
+    ]
+    n_missing = min(len(good_range), n_missing)  # can't have more missing than n_words
 
-        # check if valid blank, if not pull again
-        if blank_word not in ["?", ".", ",", "!", "。", "、", "？", "Tom", "a", "az"]:
-            # take out punctuation from acceptable sentence
-            blank_word = re.sub("[.?¿¡!,。、？]", "", blank_word)
-            acceptable = True
+    # select missing words
+    blank_indices = random.sample(good_range, n_missing)
+    blank_indices = sorted(blank_indices)
+    blank_words = [words[blank_index] for blank_index in blank_indices]
+    blank_words = [
+        re.sub("[.?¿¡!,。、？]", "", blank_word) for blank_word in blank_words
+    ]
 
-    word_list = [word if i != blank_index else "_____" for i, word in enumerate(words)]
+    word_list = [
+        word if i not in blank_indices else "_____" for i, word in enumerate(words)
+    ]
+
     if reverse:
         word_list = list(reversed(word_list))
     cloze_sentence = " ".join(word_list)
-    return cloze_sentence, blank_word, blank_index
+    return cloze_sentence, blank_words, blank_indices, n_missing
 
 
 def find_closest_words(corpus, target_word, top_n):
@@ -100,7 +108,7 @@ def setup_round():
             .reset_index(drop=True)
         )
 
-        # flip transliteration and origianl if desired
+        # flip transliteration and original if desired
         if st.session_state["guess_transliteration"]:
             transliteration = st.session_state["full_sentence_list"]["transliteration"]
             st.session_state["full_sentence_list"]["transliteration"] = (
@@ -176,18 +184,26 @@ def setup_round():
             st.session_state["sentence_sample"]["transliteration_sentence"] = ""
             st.session_state["sentence_sample"]["missing_word"] = ""
             st.session_state["sentence_sample"]["word_index"] = 0
-            st.session_state["sentence_sample"]["multiple_choice"] = ""
+            st.session_state["sentence_sample"]["min_missing"] = 0
+
+            for n_missing in range(st.session_state["n_missing"]):
+                st.session_state["sentence_sample"][f"multiple_choice_{n_missing}"] = ""
             if st.session_state["persistent_lang_name"] in ["Arabic"]:
                 reverse = True
             else:
                 reverse = False
             for i in st.session_state["sentence_sample"].index:
-                cloze_sentence, missing_word, word_index = create_cloze_test(
-                    st.session_state["sentence_sample"].loc[i, "translation"], reverse
+                cloze_sentence, missing_words, word_indices, min_missing = (
+                    create_cloze_test(
+                        st.session_state["sentence_sample"].loc[i, "translation"],
+                        reverse,
+                        n_missing=st.session_state["n_missing"],
+                    )
                 )
                 st.session_state["sentence_sample"].loc[
                     i, "cloze_sentence"
                 ] = cloze_sentence
+                st.session_state["sentence_sample"].loc[i, "min_missing"] = min_missing
 
                 # transliteration
                 if st.session_state["show_transliteration"]:
@@ -197,30 +213,35 @@ def setup_round():
                         .split()
                     )
                     if not (st.session_state["show_transliteration_answer"]):
-                        transliteration[word_index] = "_____"
+                        for word_index in word_indices:
+                            transliteration[word_index] = "_____"
                     transliteration = " ".join(transliteration)
 
                     st.session_state["sentence_sample"].loc[
                         i, "transliteration_sentence"
                     ] = transliteration
 
-                st.session_state["sentence_sample"].loc[
-                    i, "missing_word"
-                ] = missing_word
-                st.session_state["sentence_sample"].loc[i, "word_index"] = word_index
+                for n_missing in range(min_missing):
+                    st.session_state["sentence_sample"].loc[
+                        i, f"missing_word_{n_missing}"
+                    ] = missing_words[n_missing]
+                    st.session_state["sentence_sample"].loc[
+                        i, f"word_index_{n_missing}"
+                    ] = word_indices[n_missing]
 
                 # multiple choice options
-                st.session_state["sentence_sample"].loc[i, "multiple_choice"] = (
-                    ",".join(
+                for n_missing in range(min_missing):
+                    st.session_state["sentence_sample"].loc[
+                        i, f"multiple_choice_{n_missing}"
+                    ] = ",".join(
                         gen_multiple_choice(
                             st.session_state["sentence_list"],
-                            missing_word,
+                            missing_words[n_missing],
                             n=st.session_state["num_choice"] - 1,
                             top_n_sample=100,
                             random_corpus_n=500,
                         )
                     )
-                )
 
                 # difficulty
                 st.session_state["sentence_sample"].loc[i, "difficulty_percentile"] = (
@@ -270,14 +291,25 @@ def setup_round():
             ]
             .values[0]
         )
-        st.session_state["translation"] = (
+
+        min_missing = (
             st.session_state["sentence_sample"]
             .loc[
                 lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
-                "missing_word",
+                "min_missing",
             ]
             .values[0]
         )
+
+        for n_missing in range(min_missing):
+            st.session_state[f"translation_{n_missing}"] = (
+                st.session_state["sentence_sample"]
+                .loc[
+                    lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
+                    f"missing_word_{n_missing}",
+                ]
+                .values[0]
+            )
         st.session_state["difficulty_percentile"] = (
             st.session_state["sentence_sample"]
             .loc[
@@ -287,7 +319,7 @@ def setup_round():
             .values[0]
         )
 
-        # english
+        # cloze sentence
         st.markdown(
             f'### {st.session_state["sentence_sample"].loc[lambda x: x.sentence_id == st.session_state["rand_sentence_id"], "cloze_sentence"].values[0]}'
         )
@@ -298,6 +330,9 @@ def setup_round():
                 f'{st.session_state["sentence_sample"].loc[lambda x: x.sentence_id == st.session_state["rand_sentence_id"], "transliteration_sentence"].values[0]}'
             )
 
+        # show english
+        st.markdown(st.session_state["english"])
+
         if "counter" not in st.session_state:
             st.session_state["counter"] = 0
         else:
@@ -305,42 +340,79 @@ def setup_round():
 
         # text input or multiple choice
         if not (st.session_state["use_choice"]):
-            st.session_state["guess"] = st.text_input(st.session_state["english"], "")
+            cols = st.columns(int(min_missing))
+            for i, col in enumerate(cols):
+                with col:
+                    st.session_state[f"guess_{i}"] = st.text_input(
+                        "", "", key=f"text_input_{i}"
+                    )
         else:
-            if "options" not in st.session_state:
-                st.session_state["options"] = (
-                    st.session_state["sentence_sample"]
-                    .loc[
-                        lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
-                        "multiple_choice",
+            if "options_0" not in st.session_state:
+                for n_missing in range(min_missing):
+                    st.session_state[f"options_{n_missing}"] = (
+                        st.session_state["sentence_sample"]
+                        .loc[
+                            lambda x: x.sentence_id
+                            == st.session_state["rand_sentence_id"],
+                            f"multiple_choice_{n_missing}",
+                        ]
+                        .values[0]
+                    ).split(",") + [st.session_state[f"translation_{n_missing}"]]
+                    st.session_state[f"options_{n_missing}"] = random.sample(
+                        st.session_state[f"options_{n_missing}"],
+                        len(st.session_state[f"options_{n_missing}"]),
+                    )
+                    st.session_state[f"options_{n_missing}"] = [""] + st.session_state[
+                        f"options_{n_missing}"
                     ]
-                    .values[0]
-                ).split(",") + [st.session_state["translation"]]
-                st.session_state["options"] = random.sample(
-                    st.session_state["options"], len(st.session_state["options"])
-                )
-                st.session_state["options"] = [""] + st.session_state["options"]
 
-                # upper case if correct answer is uppercased
-                if st.session_state["translation"][0].isupper():
-                    st.session_state["options"] = [
-                        x.capitalize() for x in st.session_state["options"]
-                    ]
+                    # upper case if correct answer is uppercased
+                    if st.session_state[f"translation_{n_missing}"][0].isupper():
+                        st.session_state[f"options_{n_missing}"] = [
+                            x.capitalize()
+                            for x in st.session_state[f"options_{n_missing}"]
+                        ]
 
-            st.session_state["guess"] = st.selectbox(
-                st.session_state["english"],
-                options=st.session_state["options"],
-                index=0,
-            )
+            # columns of multiple choice boxes
+            cols = st.columns(int(min_missing))
+            for i, col in enumerate(cols):
+                with col:
+                    st.session_state[f"guess_{i}"] = st.selectbox(
+                        "",
+                        options=st.session_state[f"options_{i}"],
+                        index=0,
+                        key=f"multiple_choice_{i}",
+                    )
 
-        st.session_state["next_question"] = st.button("Next question")
+        # show check button if doing more than 1 missing word
+        if st.session_state["n_missing"] > 1:
+            st.session_state["check_answer"] = st.button("Check answer")
+        else:
+            st.session_state["check_answer"] = False
+
+        # clear out the text boxes
+        def on_click():
+            for i in range(min_missing):
+                exec(f"""st.session_state.text_input_{i} = "" """)
+
+        st.session_state["next_question"] = st.button(
+            "Next question", on_click=on_click
+        )
         st.markdown(
             f"{len(st.session_state['remaining_sample'])}/{len(st.session_state['sentence_ids'])} sentences remaining. ({ordinal(round(st.session_state['difficulty_percentile'] * 100, 0))} percentile difficulty)"
         )
 
-        # checking the missing word
-        if st.session_state["guess"]:
-            if st.session_state["guess"] == st.session_state["translation"]:
+        # checking the missing word(s)
+        if (st.session_state["check_answer"]) or (
+            st.session_state["guess_0"] and st.session_state["n_missing"] == 1
+        ):  # first condition is one missing only, check on change, second condition is check button
+            if all(
+                [
+                    st.session_state[f"guess_{i}"]
+                    == st.session_state[f"translation_{i}"]
+                    for i in range(min_missing)
+                ]
+            ):
                 st.info("Correct!")
                 st.session_state["sentence_sample"].loc[
                     lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
@@ -360,7 +432,14 @@ def setup_round():
                 st.session_state[
                     "wrong_counter"
                 ] += 1  # how many they got wrong this round
-                st.error(f"{st.session_state['translation']}")
+                st.error(
+                    ", ".join(
+                        [
+                            st.session_state[f"translation_{i}"]
+                            for i in range(min_missing)
+                        ]
+                    )
+                )
                 st.session_state["sentence_sample"].loc[
                     lambda x: x.sentence_id == st.session_state["rand_sentence_id"],
                     "n_wrong",
@@ -372,64 +451,61 @@ def setup_round():
                     + 1
                 )
 
-            # llm
-            if st.session_state["api_key"] != "":
-                st.session_state["gen_llm_button"] = st.button(
-                    "Generate an LLM explanation"
-                )
-                if st.session_state["gen_llm_button"]:
-                    with st.spinner("Generating LLM explanation..."):
-                        # first questions
-                        if "query" not in st.session_state:
-                            try:
-                                st.session_state["query"] = (
-                                    st.session_state["sentence_sample"]
-                                    .loc[
-                                        lambda x: x.sentence_id
-                                        == st.session_state["rand_sentence_id"],
-                                        "translation",
-                                    ]
-                                    .values[0]
-                                )
-                                st.session_state["query"] = (
-                                    f"Break down the grammer of this {st.session_state['persistent_lang_name']} sentence in a clear and logical way for a language learner to understand, restate the sentence at the top of your answer: {st.session_state['query']}"
-                                )
-
-                                st.session_state["response"] = get_gemini(
-                                    st.session_state["query"],
-                                    st.session_state["api_key"],
-                                )
-                            except:
-                                st.session_state["response"] = (
-                                    "Error generating LLM response."
-                                )
-                            st.session_state["new_query"] = st.text_input(
-                                "Follow up question", value=""
+        # llm
+        if st.session_state["api_key"] != "":
+            st.session_state["gen_llm_button"] = st.button(
+                "Generate an LLM explanation"
+            )
+            if st.session_state["gen_llm_button"]:
+                with st.spinner("Generating LLM explanation..."):
+                    # first questions
+                    if "query" not in st.session_state:
+                        try:
+                            st.session_state["query"] = (
+                                st.session_state["sentence_sample"]
+                                .loc[
+                                    lambda x: x.sentence_id
+                                    == st.session_state["rand_sentence_id"],
+                                    "translation",
+                                ]
+                                .values[0]
                             )
-                        else:
-                            st.session_state["new_query"] = st.text_input(
-                                "Follow up question", value=""
+                            st.session_state["query"] = (
+                                f"Break down the grammer of this {st.session_state['persistent_lang_name']} sentence in a clear and logical way for a language learner to understand, restate the sentence at the top of your answer: {st.session_state['query']}"
                             )
-                            try:
-                                st.session_state["query"] = (
-                                    f"Answer this questiona about {st.session_state['persistent_lang_name']} grammar: {st.session_state['new_query']}. This is the context of the question: {st.session_state['response']}"
-                                )
 
-                                st.session_state["response"] = (
-                                    f'{get_gemini(st.session_state["query"], st.session_state["api_key"])} \n\n **----Prior answer----** \n\n {st.session_state["response"]}'
-                                )
-                            except:
-                                st.session_state["response"] = (
-                                    "Error generating LLM response."
-                                )
+                            st.session_state["response"] = get_gemini(
+                                st.session_state["query"],
+                                st.session_state["api_key"],
+                            )
+                        except:
+                            st.session_state["response"] = (
+                                "Error generating LLM response."
+                            )
+                        st.session_state["new_query"] = st.text_input(
+                            "Follow up question", value=""
+                        )
+                    else:
+                        st.session_state["new_query"] = st.text_input(
+                            "Follow up question", value=""
+                        )
+                        try:
+                            st.session_state["query"] = (
+                                f"Answer this questiona about {st.session_state['persistent_lang_name']} grammar: {st.session_state['new_query']}. This is the context of the question: {st.session_state['response']}"
+                            )
 
-                        if (
-                            st.session_state["response"]
-                            == "Error generating LLM response."
-                        ):
-                            st.error(st.session_state["response"])
-                        else:
-                            st.info(st.session_state["response"])
+                            st.session_state["response"] = (
+                                f'{get_gemini(st.session_state["query"], st.session_state["api_key"])} \n\n **----Prior answer----** \n\n {st.session_state["response"]}'
+                            )
+                        except:
+                            st.session_state["response"] = (
+                                "Error generating LLM response."
+                            )
+
+                    if st.session_state["response"] == "Error generating LLM response.":
+                        st.error(st.session_state["response"])
+                    else:
+                        st.info(st.session_state["response"])
 
         # play audio
         if st.session_state["gen_pronunciation"]:
@@ -527,7 +603,7 @@ def setup_round():
                         pass
 
             try:
-                del st.session_state["options"]
+                del st.session_state["options_0"]
             except:
                 pass
 
@@ -546,15 +622,14 @@ def setup_round():
             st.rerun()
 
         # to empty and autohighlight guess box
-        if not (st.session_state["use_choice"]):
+        if not (st.session_state["use_choice"]) and st.session_state["n_missing"] == 1:
             components.html(
                 f"""
                     <div></div>
                     <p style="display: none;">{st.session_state.counter}</p>
                     <script>
                         var input = window.parent.document.querySelectorAll("input[type=text]");
-            
-                        for (var i = 0; i < input.length; ++i) {{
+                        for (var i = 0; i < (input.length - {min_missing + 1}); ++i) {{
                             input[i].focus();
                         }}
                 </script>

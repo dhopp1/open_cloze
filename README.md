@@ -25,6 +25,7 @@ If you uncheck `Randomly sampled questions?`, the sentences will be presented to
 
 ### Round options
 - `Use multiple choice?`: whether to use multiple choice or direct text input. If you choose multiple choice, you can choose how many options to be given.
+- `How many missing words in the cloze sentence`: how many blank spaces you want to have to guess in the sentence.
 - `Generate pronuncation?`: whether or not to produce audio of the sentences being read aloud.
 - `Show transliteration/original script?`: if the language isn't written in the latin script, whether or not to also show the transliteration. Automatic transliteration is currently available for Arabic, Russian, Greek, Hindi, Bengali, Japanese, and Mandarin.
 - `Guess transliteration?`: you can guess the transliteration rather than the original script if that is easier for you.
