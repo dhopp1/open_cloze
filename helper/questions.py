@@ -344,7 +344,10 @@ def setup_round():
             for i, col in enumerate(cols):
                 with col:
                     st.session_state[f"guess_{i}"] = st.text_input(
-                        "", "", key=f"text_input_{i}"
+                        "",
+                        "",
+                        key=f"text_input_{i}",
+                        label_visibility="collapsed",
                     )
         else:
             if "options_0" not in st.session_state:
@@ -382,6 +385,7 @@ def setup_round():
                         options=st.session_state[f"options_{i}"],
                         index=0,
                         key=f"multiple_choice_{i}",
+                        label_visibility="collapsed",
                     )
 
         # show check button if doing more than 1 missing word
