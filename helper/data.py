@@ -402,12 +402,6 @@ def csv_upload():
                         f"database/{st.session_state['user_id']}/{st.session_state['language_key'][st.session_state['selected_language']][0]}.csv"
                     )
 
-                    tmp["transliteration"] = [
-                        do_transliterate(
-                            st.session_state["selected_language"], x, engine
-                        )
-                        for x in tmp.translation
-                    ]
                     tmp["set"] = st.session_state["csv_set_name"]
                     tmp["last_practiced"] = ""
                     tmp["n_right"] = 0
@@ -440,6 +434,13 @@ def csv_upload():
                         tmp["translation"] = [
                             " ".join(segment_language(nlp, x)) for x in tmp.translation
                         ]
+
+                    tmp["transliteration"] = [
+                        do_transliterate(
+                            st.session_state["selected_language"], x, engine
+                        )
+                        for x in tmp.translation
+                    ]
 
                     max_sentence_id = full.sentence_id.max()
                     tmp["sentence_id"] = list(
