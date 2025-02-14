@@ -10,6 +10,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 import time
 
+try:
+    from TTS.utils.synthesizer import Synthesizer
+except:
+    pass
+
 from helper.llm import get_gemini
 
 
@@ -24,7 +29,10 @@ def ordinal(n):
 
 
 def create_cloze_test(
-    sentence, reverse=False, n_missing=1
+    sentence,
+    reverse=False,
+    n_missing=1,
+    missing_indices=[],
 ):  # reverse for right to left language like arabic
     words = sentence.split()
 
@@ -37,7 +45,19 @@ def create_cloze_test(
     n_missing = min(len(good_range), n_missing)  # can't have more missing than n_words
 
     # select missing words
-    blank_indices = random.sample(good_range, n_missing)
+    if missing_indices == []:
+        blank_indices = random.sample(good_range, n_missing)
+    else:  # take as many as possible from passed missing_indices
+        # parse the string
+        missing_indices = [int(_) for _ in missing_indices.split(",")]
+        blank_indices = [
+            _ - 1 for _ in missing_indices[:n_missing]
+        ]  # - 1 for 1 index not 0 index
+        n_random = n_missing - len(blank_indices)
+        good_range = [_ for _ in good_range if _ not in blank_indices]
+        if n_random > 0:
+            blank_indices += random.sample(good_range, n_random)
+
     blank_indices = sorted(blank_indices)
     blank_words = [words[blank_index] for blank_index in blank_indices]
     blank_words = [
@@ -192,12 +212,44 @@ def setup_round():
                 reverse = True
             else:
                 reverse = False
+
+            # initializing farse text to speech model
+            if (
+                (st.session_state["gen_pronunciation"])
+                and (st.session_state["selected_language"] == "Farsi")
+                and (st.session_state["gen_pronunciation"])
+            ):
+                config = "database/config.json"  # from https://huggingface.co/Kamtera/persian-tts-male1-vits/resolve/main/config.json?download=true
+                model = "database/checkpoint_88000.pth"  # from https://huggingface.co/Kamtera/persian-tts-male1-vits/resolve/main/checkpoint_88000.pth?download=true
+
+                if "farsi_synthesizer" not in st.session_state:
+                    st.session_state["farsi_synthesizer"] = Synthesizer(model, config)
+
             for i in st.session_state["sentence_sample"].index:
                 cloze_sentence, missing_words, word_indices, min_missing = (
                     create_cloze_test(
                         st.session_state["sentence_sample"].loc[i, "translation"],
                         reverse,
                         n_missing=st.session_state["n_missing"],
+                        missing_indices=(
+                            st.session_state["sentence_sample"].loc[
+                                i, "missing_indices"
+                            ]
+                            if (
+                                st.session_state["sentence_sample"].loc[
+                                    i, "missing_indices"
+                                ]
+                                != ""
+                                and not (
+                                    pd.isna(
+                                        st.session_state["sentence_sample"].loc[
+                                            i, "missing_indices"
+                                        ]
+                                    )
+                                )
+                            )
+                            else []
+                        ),
                     )
                 )
                 st.session_state["sentence_sample"].loc[
@@ -251,16 +303,35 @@ def setup_round():
 
                 # create audio files
                 if st.session_state["gen_pronunciation"]:
-                    myobj = gTTS(
-                        text=st.session_state["sentence_sample"].loc[i, "translation"],
-                        lang=st.session_state["language_key"][
-                            st.session_state["selected_language"]
-                        ][1],
-                        slow=False,
-                    )
-                    myobj.save(
-                        f"database/{st.session_state['user_id']}/{st.session_state['sentence_sample'].loc[i, 'sentence_id']}.mp3"
-                    )
+                    try:
+                        myobj = gTTS(
+                            text=st.session_state["sentence_sample"].loc[
+                                i, "translation"
+                            ],
+                            lang=st.session_state["language_key"][
+                                st.session_state["selected_language"]
+                            ][1],
+                            slow=False,
+                        )
+                        myobj.save(
+                            f"database/{st.session_state['user_id']}/{st.session_state['sentence_sample'].loc[i, 'sentence_id']}.mp3"
+                        )
+                    except:
+                        # persian
+                        try:
+                            wavs = st.session_state["farsi_synthesizer"].tts(
+                                st.session_state["sentence_sample"].loc[
+                                    i, "translation"
+                                ]
+                            )
+                            st.session_state["farsi_synthesizer"].save_wav(
+                                wavs,
+                                f"database/{st.session_state['user_id']}/{st.session_state['sentence_sample'].loc[i, 'sentence_id']}.mp3",
+                            )
+                        except:
+                            st.error(
+                                "Audio not supported for this language, restart the round without `Generate pronunciation` checked."
+                            )
 
     # remaining sample
     if "remaining_sample" not in st.session_state:

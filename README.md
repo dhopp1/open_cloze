@@ -47,8 +47,8 @@ Change the date range to view statistics for different periods of time. Change t
 ### Uploading your own data
 In addition to the sentence lists from manythings.org, you can upload your own. You have three options for uploading via the `Upload data` dropdown in the sidebar:
 
-1. upload a CSV with an `english` and a `translation` column
-2. upload a .txt file with raw text of the learning langauge. This file will automatically be split into sentences and translated with Google Translate.
+1. upload a CSV with an `english` and a `translation` column. You can include an additional column called `missing_indices` with a comma separated list of numbers specifying which word should be the cloze word. E.g., if the translation is `mi nombre es Tom`, you can put `1,3,4` in the  `missing_indices` column. Which means if one missing word is selected `mi` will be the missing word, if two is selected, `mi` and `es` will be the missing words, etc.
+2. upload a .txt file with raw text of the learning language. This file will automatically be split into sentences and translated with Google Translate.
 3. Similar to 2., you can paste the text you want to convert to a study set directly into the `Paste text directly` box
 
 When uploading your own data, put the name you want the set to have in the `Set name of uploaded data` text field.

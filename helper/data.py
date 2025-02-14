@@ -19,6 +19,7 @@ import shutil
 import time
 from ai4bharat.transliteration import XlitEngine
 from arabic_buckwalter_transliteration.transliteration import arabic_to_buckwalter
+from aksharamukha import transliterate
 from mtranslate import translate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from transliterate import translit
@@ -87,6 +88,10 @@ def do_transliterate(lang, sentence, engine):
     elif lang == "Japanese":
         result = engine.convert(sentence)
         transliteration = "".join([x["hepburn"] for x in result])
+    elif lang == "Farsi":
+        transliteration = transliterate.process(
+            "Arab-Fa", "Latn", sentence, nativize=True
+        )
 
     return transliteration
 
@@ -181,7 +186,7 @@ def setup_languages():
     # download language_files
     with st.spinner("Setting up language files..."):
         # first try taking template db
-        try:
+        if True:
             if (
                 len(
                     [
@@ -207,7 +212,7 @@ def setup_languages():
                 shutil.rmtree("db_template/")
 
         # if fail, rebuild the db from scratch
-        except:
+        else:
             pass
 
         for language in st.session_state["language_options"]:
@@ -286,6 +291,7 @@ def setup_languages():
                     data["transliteration"] = [
                         do_transliterate(language, x, engine) for x in data.translation
                     ]
+                    data["missing_indices"] = ""
                     data["difficulty"] = gen_difficulty(data, mean_percentile=0.1)
                     data["set"] = "Tatoeba"
                     data["last_practiced"] = ""
@@ -313,7 +319,7 @@ def csv_upload():
         st.session_state["uploaded_file"] = st.file_uploader(
             "",
             type=[".csv", ".txt"],
-            help="Upload a CSV with at least two columns, `english` and `translation`, or a .txt file in your learning language. If a .txt file is uploaded, it will be translated with Google translate and the sentence pairs will automatically be created.",
+            help="Upload a CSV with at least two columns, `english` and `translation`, or a .txt file in your learning language. If a .txt file is uploaded, it will be translated with Google translate and the sentence pairs will automatically be created. You can include an additional column called `missing_indices` with a comma separated list of numbers specifying which word should be the cloze word. E.g., if the translation is `mi nombre es Tom`, you can put `1,3,4` in the  `missing_indices` column. Which means if one missing word is selected `mi` will be the missing word, if two is selected, `mi` and `es` will be the missing words, etc.",
         )
 
         # direct text input
@@ -406,6 +412,8 @@ def csv_upload():
                     tmp["last_practiced"] = ""
                     tmp["n_right"] = 0
                     tmp["n_wrong"] = 0
+                    if "missing_indices" not in tmp.columns:
+                        tmp["missing_indices"] = ""
                     tmp["difficulty"] = gen_difficulty(tmp, mean_percentile=0.1)
                     tmp["mnemonic"] = ""
 
