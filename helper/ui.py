@@ -39,7 +39,7 @@ def sidebar():
     st.session_state["selected_language"] = st.sidebar.selectbox(
         "Select language",
         options=st.session_state["language_options"],
-        index=10,
+        index=11,
     )
 
     # set selector
@@ -120,6 +120,13 @@ def sidebar():
             ]
             .values
         )
+
+    # guess english?
+    st.session_state["guess_english"] = st.sidebar.checkbox(
+        "Guess english?",
+        value=False,
+        help="Check to guess the English instead of the language.",
+    )
 
     # use multiple choice?
     st.session_state["use_choice"] = st.sidebar.checkbox(

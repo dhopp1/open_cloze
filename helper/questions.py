@@ -136,6 +136,13 @@ def setup_round():
             )
             st.session_state["full_sentence_list"]["translation"] = transliteration
 
+        # flip english and original if desired
+        if st.session_state["guess_english"]:
+            english = st.session_state["full_sentence_list"]["english"]
+            translation = st.session_state["full_sentence_list"]["translation"]
+            st.session_state["full_sentence_list"]["english"] = translation
+            st.session_state["full_sentence_list"]["translation"] = english
+
         st.session_state["sentence_list"] = st.session_state[
             "full_sentence_list"
         ]  # because will be edited down later for quantiles
