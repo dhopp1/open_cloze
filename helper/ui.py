@@ -26,8 +26,39 @@ def import_styles():
 
 def ui_header():
     "UI header"
-    # st.title("Open Cloze")
-    st.markdown("## Open Cloze")
+    flag_dict = {
+        "Arabic": "🇪🇬",
+        "Bengali": "🇧🇩",
+        "Czech": "🇨🇿",
+        "Danish": "🇩🇰",
+        "Dutch": "🇳🇱",
+        "Farsi": "🇮🇷",
+        "Finnish": "🇫🇮",
+        "French": "🇫🇷",
+        "German": "🇩🇪",
+        "Greek": "🇬🇷",
+        "Hindi": "🇮🇳",
+        "Hungarian": "🇭🇺",
+        "Italian": "🇮🇹",
+        "Japanese": "🇯🇵",
+        "Mandarin": "🇨🇳",
+        "Norwegian": "🇳🇴",
+        "Portuguese": "🇧🇷",
+        "Romanian": "🇷🇴",
+        "Russian": "🇷🇺",
+        "Swedish": "🇸🇪",
+        "Spanish": "🇪🇸",
+        "Turkish": "🇹🇷",
+    }
+
+    try:
+        st.session_state["flag_emoji"] = flag_dict[
+            st.session_state["selected_language"]
+        ]
+    except:
+        st.session_state["flag_emoji"] = ""
+
+    st.markdown(f"""## Open Cloze {st.session_state["flag_emoji"]}""")
 
 
 def sidebar():
