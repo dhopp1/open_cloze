@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import time
 
 from helper.data import csv_upload, setup_languages
 from helper.questions import setup_round
@@ -45,6 +46,19 @@ setup_languages()
 ### sidebar
 sidebar()
 csv_upload()
+
+
+# logout
+def logout():
+    st.sidebar.info(
+        "The next time you refresh the page you will need to sign in again."
+    )
+    time.sleep(3)
+    st.session_state["cookie_manager"].delete(cookie="logged_in")
+    st.session_state["cookie_manager"].delete(cookie="username")
+
+
+st.sidebar.button("Logout", on_click=logout)
 
 ### tabs
 tabs = st.tabs(["Round", "Stats", "README"])

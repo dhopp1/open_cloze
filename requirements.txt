@@ -2,6 +2,7 @@ ai4bharat-transliteration
 aksharamukha
 arabic_buckwalter_transliteration
 editdistance
+extra-streamlit-components
 google-generativeai
 gtts
 mtranslate
