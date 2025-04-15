@@ -3,7 +3,7 @@ import google.generativeai as genai
 
 def get_gemini(query, api_key):
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("gemini-1.5-pro")
 
     generation_config = genai.types.GenerationConfig(
         temperature=0.0,

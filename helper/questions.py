@@ -551,7 +551,7 @@ def setup_round():
                                 .values[0]
                             )
                             st.session_state["query"] = (
-                                f"Break down the grammer of this {st.session_state['persistent_lang_name']} sentence in a clear and logical way for a language learner to understand, restate the sentence at the top of your answer: {st.session_state['query']}"
+                                f"Break down the grammer of this {st.session_state['persistent_lang_name']} sentence in a clear and logical way for a language learner to understand, restate the sentence at the top of your answer: {st.session_state['query']}. At the end, include a table breaking down each word in the sentence, its definition, role, and explaining any declensions or conjugations it has."
                             )
 
                             st.session_state["response"] = get_gemini(
