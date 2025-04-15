@@ -477,9 +477,7 @@ def setup_round():
             for i in range(min_missing):
                 exec(f"""st.session_state.text_input_{i} = "" """)
 
-        st.session_state["next_question"] = st.button(
-            "Next question", on_click=on_click
-        )
+        st.button("Next question", on_click=on_click, key="next_question")
         st.markdown(
             f"{len(st.session_state['remaining_sample'])}/{len(st.session_state['sentence_ids'])} sentences remaining. ({ordinal(round(st.session_state['difficulty_percentile'] * 100, 0))} percentile difficulty)"
         )

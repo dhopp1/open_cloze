@@ -39,6 +39,7 @@ def ui_header():
         "Greek": "🇬🇷",
         "Hindi": "🇮🇳",
         "Hungarian": "🇭🇺",
+        "Indonesian": "🇮🇩",
         "Italian": "🇮🇹",
         "Japanese": "🇯🇵",
         "Mandarin": "🇨🇳",
@@ -46,9 +47,11 @@ def ui_header():
         "Portuguese": "🇧🇷",
         "Romanian": "🇷🇴",
         "Russian": "🇷🇺",
+        "Swahili": "🇰🇪",
         "Swedish": "🇸🇪",
         "Spanish": "🇪🇸",
         "Turkish": "🇹🇷",
+        "Vietnamese": "🇻🇳",
     }
 
     try:
@@ -67,10 +70,11 @@ def sidebar():
     )
 
     # language selector
-    st.session_state["selected_language"] = st.sidebar.selectbox(
+    st.sidebar.selectbox(
         "Select language",
         options=st.session_state["language_options"],
         index=11,
+        key="selected_language",
     )
 
     # set selector
