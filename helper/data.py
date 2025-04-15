@@ -64,8 +64,114 @@ def segment_language(nlp, sentence):
     return seg_result
 
 
+# korean transliteration
+def ko_transliterate(text):
+    # Mapping tables for Revised Romanization
+    INITIALS = [
+        "g",
+        "kk",
+        "n",
+        "d",
+        "tt",
+        "r",
+        "m",
+        "b",
+        "pp",
+        "s",
+        "ss",
+        "",
+        "j",
+        "jj",
+        "ch",
+        "k",
+        "t",
+        "p",
+        "h",
+    ]
+
+    MEDIALS = [
+        "a",
+        "ae",
+        "ya",
+        "yae",
+        "eo",
+        "e",
+        "yeo",
+        "ye",
+        "o",
+        "wa",
+        "wae",
+        "oe",
+        "yo",
+        "u",
+        "wo",
+        "we",
+        "wi",
+        "yu",
+        "eu",
+        "ui",
+        "i",
+    ]
+
+    FINALS = [
+        "",
+        "k",
+        "k",
+        "ks",
+        "n",
+        "nj",
+        "nh",
+        "t",
+        "l",
+        "lk",
+        "lm",
+        "lb",
+        "ls",
+        "lt",
+        "lp",
+        "lh",
+        "m",
+        "p",
+        "ps",
+        "t",
+        "t",
+        "ng",
+        "t",
+        "t",
+        "k",
+        "t",
+        "p",
+        "h",
+    ]
+
+    # Hangul Unicode base values
+    HANGUL_BASE = 0xAC00
+    CHOSUNG_BASE = 588
+    JOONGSUNG_BASE = 28
+
+    def decompose_hangul(char):
+        code = ord(char)
+        if not (0xAC00 <= code <= 0xD7A3):
+            return char  # Not a Hangul syllable
+
+        syllable_index = code - HANGUL_BASE
+        cho = syllable_index // CHOSUNG_BASE
+        jung = (syllable_index % CHOSUNG_BASE) // JOONGSUNG_BASE
+        jong = syllable_index % JOONGSUNG_BASE
+
+        return INITIALS[cho] + MEDIALS[jung] + FINALS[jong]
+
+    def transliterate_korean_to_latin(text):
+        result = ""
+        for char in text:
+            result += decompose_hangul(char)
+        return result
+
+    return transliterate_korean_to_latin(text)
+
+
 # transliterate
-def do_transliterate(lang, sentence, engine):
+def do_transliterate(lang, sentence, engine=None):
     transliteration = ""
     if lang == "Mandarin":
         transliteration = pinyin.get(sentence, format="numerical")
@@ -92,6 +198,8 @@ def do_transliterate(lang, sentence, engine):
         transliteration = transliterate.process(
             "Arab-Fa", "Latn", sentence, nativize=True
         )
+    elif lang == "Korean":
+        transliteration = ko_transliterate(sentence)
 
     return transliteration
 

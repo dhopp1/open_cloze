@@ -42,6 +42,7 @@ def ui_header():
         "Indonesian": "🇮🇩",
         "Italian": "🇮🇹",
         "Japanese": "🇯🇵",
+        "Korean": "🇰🇷",
         "Mandarin": "🇨🇳",
         "Norwegian": "🇳🇴",
         "Portuguese": "🇧🇷",
@@ -59,7 +60,10 @@ def ui_header():
             st.session_state["selected_language"]
         ]
     except:
-        st.session_state["flag_emoji"] = ""
+        if "selected_language" not in st.session_state:
+            st.session_state["flag_emoji"] = flag_dict["Hungarian"]
+        else:
+            st.session_state["flag_emoji"] = ""
 
     st.markdown(f"""## Open Cloze {st.session_state["flag_emoji"]}""")
 
