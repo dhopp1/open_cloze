@@ -45,6 +45,7 @@ def ui_header():
         "Korean": "🇰🇷",
         "Mandarin": "🇨🇳",
         "Norwegian": "🇳🇴",
+        "Polish": "🇵🇱",
         "Portuguese": "🇧🇷",
         "Romanian": "🇷🇴",
         "Russian": "🇷🇺",
